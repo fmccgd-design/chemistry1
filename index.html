@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>원자량 학습 프로그램</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080f;--bg2:#0d1220;--bg3:#141a2e;
+  --card:#111827;--card2:#1a2340;
+  --border:#1e2d4a;--border2:#2a3d5e;
+  --accent:#3b82f6;--accent2:#60a5fa;
+  --gold:#f59e0b;--gold2:#fcd34d;
+  --green:#10b981;--red:#ef4444;--purple:#8b5cf6;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(59,130,246,.08) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(245,158,11,.06) 0%,transparent 60%);pointer-events:none;z-index:0;}
+.wrap{max-width:980px;margin:0 auto;padding:36px 20px;position:relative;z-index:1;}
+
+/* HEADER */
+.hdr{text-align:center;margin-bottom:44px;}
+.hdr-badge{display:inline-block;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(245,158,11,.15));border:1px solid rgba(59,130,246,.3);border-radius:100px;padding:6px 18px;font-size:.7rem;letter-spacing:.2em;color:var(--accent2);margin-bottom:14px;font-weight:500;}
+.hdr h1{font-family:'Noto Serif KR',serif;font-size:2.5rem;font-weight:700;background:linear-gradient(135deg,#e2e8f0 0%,#94a3b8 50%,#60a5fa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2;margin-bottom:8px;}
+.hdr p{color:var(--text3);font-size:.88rem;letter-spacing:.04em;}
+
+/* TABS */
+.tabs{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:5px;margin-bottom:32px;gap:4px;}
+.tab{flex:1;padding:11px 8px;border:none;border-radius:10px;background:transparent;color:var(--text3);cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:.88rem;font-weight:500;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.tab.on{background:linear-gradient(135deg,var(--card2),rgba(59,130,246,.15));color:var(--accent2);border:1px solid rgba(59,130,246,.3);box-shadow:0 4px 20px rgba(59,130,246,.12);}
+.tab:hover:not(.on){color:var(--text2);background:rgba(255,255,255,.04);}
+.sec{display:none;}.sec.on{display:block;}
+
+/* FLASHCARD */
+.fc-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.fc-counter{font-size:.85rem;color:var(--text3);}
+.fc-counter span{color:var(--accent2);font-weight:700;font-family:var(--mono);}
+.flip-hint{font-size:.76rem;color:var(--text3);}
+.flip-hint::before{content:'↻ ';color:var(--accent);}
+.scene{width:100%;height:310px;perspective:1200px;cursor:pointer;margin-bottom:22px;}
+.inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);}
+.inner.flip{transform:rotateY(180deg);}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;border:1px solid var(--border2);padding:32px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;}
+.front{background:linear-gradient(145deg,var(--card2),#0f1a2e);box-shadow:0 8px 40px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05);}
+.front .tbadge{position:absolute;top:18px;right:18px;font-size:.68rem;color:var(--accent);background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:6px;padding:3px 10px;}
+.front .flbl{font-size:.72rem;letter-spacing:.15em;color:var(--gold);margin-bottom:18px;font-weight:600;}
+.front h2{font-family:'Noto Serif KR',serif;font-size:1.85rem;font-weight:700;color:#f1f5f9;line-height:1.3;}
+.front .fen{margin-top:10px;font-size:.88rem;color:var(--text3);font-style:italic;}
+.back{background:linear-gradient(145deg,#0e1f14,#0a1810);border-color:rgba(16,185,129,.25);box-shadow:0 8px 40px rgba(0,0,0,.4);transform:rotateY(180deg);text-align:left;align-items:flex-start;overflow-y:auto;padding:24px 30px;}
+.back .blbl{font-size:.68rem;letter-spacing:.15em;color:var(--green);margin-bottom:14px;font-weight:600;}
+.btext{font-size:.9rem;line-height:1.95;color:var(--text);white-space:pre-line;}
+.fc-ctrl{display:flex;align-items:center;justify-content:center;gap:14px;}
+.cbtn{width:46px;height:46px;border-radius:12px;border:1px solid var(--border2);background:var(--card);color:var(--text2);cursor:pointer;font-size:1.1rem;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.cbtn:hover{background:var(--card2);border-color:var(--accent);color:var(--accent2);transform:scale(1.06);}
+.dots{display:flex;gap:5px;align-items:center;flex-wrap:wrap;max-width:280px;justify-content:center;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--border2);transition:all .3s;cursor:pointer;}
+.dot.on{background:var(--accent);transform:scale(1.35);}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px;margin-top:24px;}
+.chip{padding:9px 15px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:.8rem;color:var(--text2);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:7px;}
+.chip::before{content:'▸';color:var(--accent);font-size:.68rem;}
+.chip:hover,.chip.on{background:var(--card2);border-color:var(--accent);color:var(--accent2);}
+
+/* QUIZ SETUP */
+.setup-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:34px;}
+.setup-title{font-family:'Noto Serif KR',serif;font-size:1.2rem;font-weight:600;margin-bottom:7px;color:#f1f5f9;}
+.setup-desc{font-size:.83rem;color:var(--text3);margin-bottom:32px;line-height:1.75;}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:28px;}
+.sbox{background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:20px;}
+.slbl{font-size:.78rem;letter-spacing:.08em;color:var(--text3);margin-bottom:11px;font-weight:500;}
+.slbl span{color:var(--accent2);font-weight:700;}
+.nctrl{display:flex;align-items:center;gap:12px;}
+.nbtn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border2);background:var(--card);color:var(--text);cursor:pointer;font-size:1.05rem;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.nbtn:hover{background:var(--accent);border-color:var(--accent);}
+.ndisp{font-family:var(--mono);font-size:1.7rem;font-weight:600;color:#f1f5f9;min-width:34px;text-align:center;}
+.nunit{font-size:.83rem;color:var(--text3);}
+.tinfo{background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(59,130,246,.08));border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:13px 18px;font-size:.83rem;color:var(--text2);margin-bottom:24px;display:flex;align-items:center;gap:9px;}
+.tinfo::before{content:'ℹ';color:var(--gold);}
+.gbtn{width:100%;padding:17px;border:none;border-radius:13px;background:linear-gradient(135deg,var(--accent),#2563eb);color:white;font-family:'Noto Sans KR',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:all .25s;box-shadow:0 4px 24px rgba(59,130,246,.3);}
+.gbtn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(59,130,246,.4);}
+.gbtn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+/* LOADING */
+.lbox{display:flex;flex-direction:column;align-items:center;padding:56px 20px;gap:18px;}
+.spin{width:46px;height:46px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ltxt{font-size:.88rem;color:var(--text2);text-align:center;line-height:1.7;}
+.ltxt strong{color:var(--accent2);display:block;font-size:.95rem;margin-bottom:4px;}
+
+/* QUIZ */
+.qhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;flex-wrap:wrap;gap:10px;}
+.qmeta{display:flex;gap:9px;align-items:center;}
+.mbadge{padding:5px 12px;border-radius:6px;font-size:.73rem;font-weight:600;letter-spacing:.04em;}
+.mc-badge{background:rgba(59,130,246,.15);color:var(--accent2);border:1px solid rgba(59,130,246,.25);}
+.sa-badge{background:rgba(245,158,11,.15);color:var(--gold2);border:1px solid rgba(245,158,11,.25);}
+.rbtn{padding:8px 15px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text3);cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:.78rem;transition:all .2s;}
+.rbtn:hover{border-color:var(--red);color:var(--red);}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:14px;transition:border-color .3s;}
+.qcard.ok{border-color:rgba(16,185,129,.4);}
+.qcard.ng{border-color:rgba(239,68,68,.4);}
+.qhd{display:flex;align-items:flex-start;gap:13px;margin-bottom:16px;}
+.qnum{min-width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.82rem;font-weight:700;flex-shrink:0;margin-top:2px;}
+.qnum.mc{background:rgba(59,130,246,.15);color:var(--accent2);border:1px solid rgba(59,130,246,.25);}
+.qnum.sa{background:rgba(245,158,11,.15);color:var(--gold2);border:1px solid rgba(245,158,11,.25);}
+.qtag{font-size:.7rem;color:var(--text3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;margin-left:auto;flex-shrink:0;white-space:nowrap;}
+.qtxt{font-size:.97rem;line-height:1.9;color:var(--text);flex:1;white-space:pre-line;}
+.tbl-wrap{margin:14px 0;border-radius:10px;overflow:hidden;border:1px solid var(--border2);}
+.qtbl{width:100%;border-collapse:collapse;font-size:.88rem;}
+.qtbl th{background:var(--bg3);color:var(--accent2);padding:10px 15px;text-align:center;font-weight:600;font-size:.8rem;letter-spacing:.05em;border-bottom:1px solid var(--border2);}
+.qtbl td{padding:10px 15px;text-align:center;border-bottom:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:.86rem;}
+.qtbl tr:last-child td{border-bottom:none;}
+.qtbl tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+.chgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px;}
+.chbtn{padding:12px 15px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:.88rem;text-align:left;transition:all .2s;line-height:1.5;}
+.chbtn:hover:not(:disabled){border-color:var(--accent);background:rgba(59,130,246,.08);color:var(--text);}
+.chbtn.sel{border-color:var(--accent);background:rgba(59,130,246,.12);color:var(--accent2);}
+.chbtn.ca{border-color:var(--green)!important;background:rgba(16,185,129,.12)!important;color:#6ee7b7!important;}
+.chbtn.wa{border-color:var(--red)!important;background:rgba(239,68,68,.1)!important;color:#fca5a5!important;}
+.sainput{width:100%;margin-top:13px;padding:12px 15px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-family:var(--mono);font-size:.97rem;outline:none;transition:border-color .2s;}
+.sainput:focus{border-color:var(--accent);}
+.sainput.ci{border-color:var(--green);background:rgba(16,185,129,.06);}
+.sainput.wi{border-color:var(--red);background:rgba(239,68,68,.06);}
+.sol{margin-top:16px;padding:17px 19px;border-radius:12px;background:linear-gradient(135deg,rgba(16,185,129,.06),rgba(59,130,246,.04));border:1px solid rgba(16,185,129,.2);display:none;}
+.sol.show{display:block;}
+.soltit{font-size:.73rem;letter-spacing:.1em;color:var(--green);font-weight:700;margin-bottom:9px;}
+.soltxt{font-size:.86rem;line-height:1.9;color:var(--text2);white-space:pre-line;}
+.solans{margin-top:9px;font-size:.83rem;color:var(--gold2);font-weight:600;font-family:var(--mono);}
+.save-q-btn{margin-top:12px;padding:7px 16px;border:1px solid rgba(139,92,246,.35);border-radius:8px;background:rgba(139,92,246,.08);color:#a78bfa;font-family:'Noto Sans KR',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.save-q-btn:hover{background:rgba(139,92,246,.18);border-color:#a78bfa;}
+.save-q-btn.saved{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4);color:#6ee7b7;}
+.submit-area{margin-top:26px;display:flex;flex-direction:column;align-items:center;gap:11px;}
+.subbtn{padding:15px 46px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--gold),#d97706);color:#1a0e00;font-family:'Noto Sans KR',sans-serif;font-size:.97rem;font-weight:700;cursor:pointer;letter-spacing:.04em;transition:all .25s;box-shadow:0 4px 24px rgba(245,158,11,.3);}
+.subbtn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,158,11,.4);}
+.subbtn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+/* RESULT */
+.reshero{text-align:center;padding:36px 20px;background:var(--card);border:1px solid var(--border);border-radius:20px;}
+.resscore{font-family:var(--mono);font-size:4.5rem;font-weight:600;line-height:1;margin-bottom:11px;}
+.resscore.hi{color:var(--green);}.resscore.mi{color:var(--gold);}.resscore.lo{color:var(--red);}
+.reslbl{font-size:.97rem;color:var(--text2);margin-bottom:18px;}
+.reschips{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;}
+.rchip{padding:6px 15px;border-radius:100px;font-size:.8rem;font-weight:600;}
+.rc-ok{background:rgba(16,185,129,.15);color:#6ee7b7;}
+.rc-ng{background:rgba(239,68,68,.15);color:#fca5a5;}
+.rebtns{display:flex;gap:11px;justify-content:center;margin-top:24px;flex-wrap:wrap;}
+.rebtn{padding:11px 26px;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.rebtn.pri{background:var(--accent);border:none;color:white;}
+.rebtn.pri:hover{background:var(--accent2);transform:translateY(-1px);}
+.rebtn.sec{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.rebtn.sec:hover{border-color:var(--text2);color:var(--text);}
+
+/* SAVED */
+.saved-empty{text-align:center;padding:60px 20px;color:var(--text3);}
+.saved-empty .ei{font-size:2.5rem;margin-bottom:14px;}
+.saved-empty p{font-size:.9rem;line-height:1.7;}
+.saved-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.saved-count{font-size:.85rem;color:var(--text2);}
+.saved-count span{color:var(--accent2);font-weight:700;font-family:var(--mono);}
+.clr-btn{padding:8px 15px;border:1px solid rgba(239,68,68,.3);border-radius:8px;background:transparent;color:var(--red);font-family:'Noto Sans KR',sans-serif;font-size:.78rem;cursor:pointer;transition:all .2s;}
+.clr-btn:hover{background:rgba(239,68,68,.1);}
+.saved-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:12px;}
+.saved-card-hd{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;}
+.saved-type{min-width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;}
+.saved-type.mc{background:rgba(59,130,246,.15);color:var(--accent2);border:1px solid rgba(59,130,246,.25);}
+.saved-type.sa{background:rgba(245,158,11,.15);color:var(--gold2);border:1px solid rgba(245,158,11,.25);}
+.saved-q{font-size:.93rem;line-height:1.85;color:var(--text);flex:1;white-space:pre-line;}
+.saved-topic{font-size:.68rem;color:var(--text3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;white-space:nowrap;}
+.saved-del{width:28px;height:28px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:.9rem;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.saved-del:hover{border-color:var(--red);color:var(--red);}
+.sp-btns{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.sp-submit{padding:9px 22px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--gold),#d97706);color:#1a0e00;font-family:'Noto Sans KR',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s;}
+.sp-submit:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,158,11,.35);}
+.sp-submit:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.sp-reset{padding:8px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text3);font-family:'Noto Sans KR',sans-serif;font-size:.8rem;cursor:pointer;transition:all .2s;}
+.sp-reset:hover{border-color:var(--accent2);color:var(--accent2);}
+.sp-result{margin-top:10px;padding:10px 14px;border-radius:8px;font-size:.85rem;font-weight:600;display:none;}
+.sp-result.ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#6ee7b7;display:block;}
+.sp-result.ng{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;display:block;}
+.saved-sol{margin-top:12px;padding:15px 17px;border-radius:10px;background:linear-gradient(135deg,rgba(16,185,129,.06),rgba(59,130,246,.04));border:1px solid rgba(16,185,129,.2);display:none;}
+.saved-sol.show{display:block;}
+.saved-sol .soltit{font-size:.73rem;letter-spacing:.1em;color:var(--green);font-weight:700;margin-bottom:8px;}
+.saved-sol .soltxt{font-size:.84rem;line-height:1.85;color:var(--text2);white-space:pre-line;}
+.saved-sol .solans{margin-top:8px;font-size:.82rem;color:var(--gold2);font-weight:600;font-family:var(--mono);}
+
+.errbox{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:11px;padding:14px 18px;color:#fca5a5;font-size:.88rem;margin-top:14px;display:flex;gap:9px;align-items:flex-start;}
+.divider{height:1px;background:var(--border);margin:24px 0;}
+.ain{animation:fup .38s ease forwards;}
+@keyframes fup{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:580px){
+  .sg{grid-template-columns:1fr;}
+  .hdr h1{font-size:1.75rem;}
+  .chgrid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr ain">
+    <div class="hdr-badge">⚛ CHEMISTRY STUDY PROGRAM</div>
+    <h1>원자량 학습 프로그램</h1>
+    <p>플래시카드 개념학습 · AI 기출문제 생성 · 문제 저장</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tab-fc" onclick="goTab('fc')">🃏 플래시카드</button>
+    <button class="tab" id="tab-quiz" onclick="goTab('quiz')">📝 기출문제</button>
+    <button class="tab" id="tab-saved" onclick="goTab('saved')">💾 저장된 문제<span id="savedBadge" style="display:none;background:var(--purple);color:white;border-radius:100px;padding:1px 7px;font-size:.68rem;margin-left:4px;"></span></button>
+  </div>
+
+  <!-- FLASHCARD -->
+  <div class="sec on" id="sec-fc">
+    <div class="fc-nav">
+      <div class="fc-counter"><span id="fcNum">1</span> / <span id="fcTotal">10</span></div>
+      <div class="flip-hint">클릭하여 뒤집기</div>
+    </div>
+    <div class="scene" onclick="flipCard()">
+      <div class="inner" id="cardInner">
+        <div class="face front">
+          <div class="tbadge" id="fcTopic"></div>
+          <div class="flbl">CONCEPT</div>
+          <h2 id="fcFront"></h2>
+          <div class="fen" id="fcEn"></div>
+        </div>
+        <div class="face back">
+          <div class="blbl">EXPLANATION</div>
+          <div class="btext" id="fcBack"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-ctrl">
+      <button class="cbtn" onclick="prevCard()">◀</button>
+      <div class="dots" id="fcDots"></div>
+      <button class="cbtn" onclick="nextCard()">▶</button>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:.78rem;color:var(--text3);letter-spacing:.1em;margin-bottom:11px;">빠른 이동</div>
+    <div class="cgrid" id="fcChips"></div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="sec" id="sec-quiz">
+    <div id="qSetup">
+      <div class="setup-card ain">
+        <div class="setup-title">AI 기출문제 생성</div>
+        <div class="setup-desc">Claude Sonnet AI가 원자량·분자량·몰·아보가드로 관련 고품질 문제를 생성합니다.<br>수능/내신 수준 · 정답 자기검증 · 상세 해설</div>
+        <div class="sg">
+          <div class="sbox">
+            <div class="slbl">객관식 (4지선다) &nbsp;<span id="mcLbl">3</span>문제</div>
+            <div class="nctrl">
+              <button class="nbtn" onclick="cc('mc',-1)">−</button>
+              <div class="ndisp" id="mcN">3</div>
+              <button class="nbtn" onclick="cc('mc',1)">+</button>
+              <span class="nunit">문제</span>
+            </div>
+          </div>
+          <div class="sbox">
+            <div class="slbl">주관식 (계산형) &nbsp;<span id="saLbl">2</span>문제</div>
+            <div class="nctrl">
+              <button class="nbtn" onclick="cc('sa',-1)">−</button>
+              <div class="ndisp" id="saN">2</div>
+              <button class="nbtn" onclick="cc('sa',1)">+</button>
+              <span class="nunit">문제</span>
+            </div>
+          </div>
+        </div>
+        <div class="tinfo" id="tinfo">총 5문제가 생성됩니다.</div>
+        <button class="gbtn" id="gBtn" onclick="genQuiz()">✦ AI 문제 생성하기</button>
+        <div id="gErr"></div>
+      </div>
+    </div>
+    <div id="qLoad" style="display:none;">
+      <div class="lbox">
+        <div class="spin"></div>
+        <div class="ltxt"><strong>AI가 문제를 생성하고 있습니다...</strong>수치 검증 및 해설 작성 중입니다. 잠시만 기다려주세요.</div>
+      </div>
+    </div>
+    <div id="qQs" style="display:none;"></div>
+    <div id="qRes" style="display:none;"></div>
+  </div>
+
+  <!-- SAVED -->
+  <div class="sec" id="sec-saved">
+    <div id="savedContent"></div>
+  </div>
+</div>
+
+<script>
+// ── FLASHCARD DATA ──────────────────────────────────────────
+var CARDS = [
+  {concept:"원자량", en:"Atomic Mass", topic:"원자량",
+   back:"탄소-12 원자 질량을 12로 기준하여, 각 원자의 상대적 질량을 나타낸 값\n\n• 단위 없음 (무차원 상대값)\n• 동위원소의 존재 비율을 고려한 평균값\n• H≈1  C=12  N≈14  O=16  Na=23  Cl≈35.5\n\n※ 원자량은 실제 질량이 아닌 상대적 비교값"},
+  {concept:"분자량", en:"Molecular Mass", topic:"분자량",
+   back:"분자를 구성하는 모든 원자의 원자량 합계\n\n  H₂O   = 1×2 + 16    = 18\n  CO₂   = 12 + 16×2   = 44\n  H₂SO₄ = 2 + 32 + 64 = 98\n  NH₃   = 14 + 1×3    = 17\n\n※ 이온 결합 화합물은 '화학식량'이라 함"},
+  {concept:"아보가드로 법칙", en:"Avogadro's Law", topic:"아보가드로",
+   back:"같은 온도·압력에서 같은 부피의 기체는 종류에 관계없이 같은 수의 분자를 포함한다.\n\n  기체의 부피비 = 분자 수의 비 = 몰 수의 비\n\nSTP (0°C, 1atm)\n  기체 1mol = 22.4 L"},
+  {concept:"아보가드로 수", en:"Avogadro's Number", topic:"아보가드로",
+   back:"탄소-12 원자 12g 속 원자 개수\n\n  Nₐ = 6.022 × 10²³ /mol\n\n  입자 수 = 몰 수 × 6.022×10²³\n\n예: H₂O 2mol → 1.2044×10²⁴ 개"},
+  {concept:"몰 (mol)", en:"Mole", topic:"몰",
+   back:"물질의 양을 나타내는 SI 기본 단위\n\n  1 mol = 6.022 × 10²³ 개의 입자\n\n핵심 관계\n  몰 수 = 질량(g) ÷ 몰질량(g/mol)\n  몰 수 = 부피(L) ÷ 22.4  (기체 STP)\n  몰 수 = 입자 수 ÷ 6.022×10²³"},
+  {concept:"몰질량", en:"Molar Mass", topic:"몰질량",
+   back:"물질 1mol의 질량  (g/mol)\n\n  H₂O  → 18 g/mol\n  CO₂  → 44 g/mol\n  NaCl → 58.5 g/mol\n\n  몰 수(mol) = 질량(g) ÷ 몰질량(g/mol)"},
+  {concept:"몰 부피", en:"Molar Volume", topic:"몰 부피",
+   back:"기체 1mol이 차지하는 부피\n\n  STP (0°C, 1atm) → 22.4 L/mol\n\n  몰 수 = 부피(L) ÷ 22.4\n\n예: CO₂ 11.2L → 0.5mol → 3.011×10²³ 개"},
+  {concept:"몰 농도", en:"Molarity", topic:"몰 농도",
+   back:"용액 1L 속 용질의 몰 수  (M, mol/L)\n\n  M = 용질 몰 수(mol) ÷ 용액 부피(L)\n\n예: NaOH 4g → 500mL\n  0.1mol ÷ 0.5L = 0.2 M\n\n  희석: C₁V₁ = C₂V₂"},
+  {concept:"화학식량", en:"Formula Mass", topic:"화학식량",
+   back:"이온 결합 물질의 화학식을 구성하는 원자들의 원자량 합\n\n  NaCl  = 23+35.5 = 58.5\n  CaCO₃ = 40+12+48 = 100\n  MgSO₄ = 24+32+64 = 120"},
+  {concept:"백분율 조성", en:"Percent Composition", topic:"조성",
+   back:"화합물에서 각 원소의 질량 백분율\n\n  X의 질량% = X의 총 원자량 ÷ 분자량 × 100\n\n예: H₂O\n  H: 2/18 × 100 = 11.1%\n  O: 16/18 × 100 = 88.9%"}
+];
+
+// ── FLASHCARD ───────────────────────────────────────────────
+var curCard = 0, cardFlip = false;
+
+function renderFC() {
+  var c = CARDS[curCard];
+  document.getElementById('fcFront').textContent = c.concept;
+  document.getElementById('fcEn').textContent = c.en;
+  document.getElementById('fcTopic').textContent = c.topic;
+  document.getElementById('fcBack').textContent = c.back;
+  document.getElementById('fcNum').textContent = curCard + 1;
+  document.querySelectorAll('.dot').forEach(function(d,i){ d.classList.toggle('on', i===curCard); });
+  document.querySelectorAll('.chip').forEach(function(ch,i){ ch.classList.toggle('on', i===curCard); });
+}
+function flipCard() { cardFlip = !cardFlip; document.getElementById('cardInner').classList.toggle('flip', cardFlip); }
+function nextCard() { cardFlip=false; document.getElementById('cardInner').classList.remove('flip'); curCard=(curCard+1)%CARDS.length; renderFC(); }
+function prevCard() { cardFlip=false; document.getElementById('cardInner').classList.remove('flip'); curCard=(curCard-1+CARDS.length)%CARDS.length; renderFC(); }
+function gotoCard(i) { cardFlip=false; document.getElementById('cardInner').classList.remove('flip'); curCard=i; renderFC(); }
+
+function initFC() {
+  document.getElementById('fcTotal').textContent = CARDS.length;
+  var de = document.getElementById('fcDots');
+  de.innerHTML = '';
+  CARDS.forEach(function(_,i) {
+    var d = document.createElement('div');
+    d.className = 'dot';
+    d.onclick = (function(x){ return function(){ gotoCard(x); }; })(i);
+    de.appendChild(d);
+  });
+  var ge = document.getElementById('fcChips');
+  ge.innerHTML = '';
+  CARDS.forEach(function(c,i) {
+    var ch = document.createElement('div');
+    ch.className = 'chip';
+    ch.textContent = c.concept;
+    ch.onclick = (function(x){ return function(){ gotoCard(x); }; })(i);
+    ge.appendChild(ch);
+  });
+  renderFC();
+}
+
+// ── TABS ────────────────────────────────────────────────────
+function goTab(t) {
+  ['fc','quiz','saved'].forEach(function(id) {
+    document.getElementById('tab-'+id).classList.toggle('on', id===t);
+    document.getElementById('sec-'+id).classList.toggle('on', id===t);
+  });
+  if (t === 'saved') renderSaved();
+}
+
+// ── QUIZ SETTINGS ───────────────────────────────────────────
+var mcN = 3, saN = 2;
+function cc(type, d) {
+  if (type==='mc') { mcN=Math.max(1,mcN+d); document.getElementById('mcN').textContent=mcN; document.getElementById('mcLbl').textContent=mcN; }
+  else             { saN=Math.max(1,saN+d); document.getElementById('saN').textContent=saN; document.getElementById('saLbl').textContent=saN; }
+  document.getElementById('tinfo').textContent = '총 '+(mcN+saN)+'문제가 생성됩니다.';
+}
+
+// ── QUIZ GENERATION ─────────────────────────────────────────
+var CQs = [], selCh = {};
+
+function genQuiz() {
+  document.getElementById('gBtn').disabled = true;
+  document.getElementById('gErr').innerHTML = '';
+  document.getElementById('qSetup').style.display = 'none';
+  document.getElementById('qLoad').style.display = 'block';
+  document.getElementById('qQs').style.display = 'none';
+  document.getElementById('qQs').innerHTML = '';
+  document.getElementById('qRes').style.display = 'none';
+  document.getElementById('qRes').innerHTML = '';
+  selCh = {};
+
+  var prompt =
+    '당신은 대한민국 고등학교 화학 교사입니다.\n' +
+    '원자량/분자량/몰/몰질량/아보가드로수·법칙/몰부피/몰농도/화학식량 주제로 시험 문제를 만드세요.\n\n' +
+    '[중요] 문제를 만들기 전에 반드시 스스로 풀어서 정답을 확인하세요. 보기에 정답이 반드시 포함되어야 합니다. 수치 오류 절대 금지.\n\n' +
+    '- 객관식 ' + mcN + '문제: 4지선다 ①②③④, answer는 정확히 보기 문자열과 일치\n' +
+    '- 주관식 ' + saN + '문제: 계산형, answer는 최종 수치+단위\n' +
+    '- 해설: 단계별 풀이, 핵심 공식 명시\n' +
+    '- 표 필요시 table:{headers:[],rows:[[]]} 구조\n\n' +
+    '순수 JSON만 출력. 백틱 마크다운 절대 금지.\n' +
+    '{"questions":[{"id":1,"type":"mc","topic":"주제","question":"문제","table":null,"choices":["① a","② b","③ c","④ d"],"answer":"② b","solution":"해설"},{"id":2,"type":"sa","topic":"주제","question":"문제","table":null,"answer":"정답","solution":"해설"}]}';
+
+  fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 6000,
+      system: "정확한 화학 교사. 순수 JSON만 반환. 마크다운 코드블록 사용 금지.",
+      messages: [
+        { role: "user", content: prompt }
+      ]
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) throw new Error(data.error.message || 'API 오류');
+    var raw = (data.content || []).map(function(b){ return b.text || ''; }).join('').trim();
+    var clean = raw.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
+    var parsed = JSON.parse(clean);
+    if (!parsed.questions || !Array.isArray(parsed.questions)) throw new Error('형식 오류');
+    CQs = parsed.questions;
+    selCh = {};
+    document.getElementById('qLoad').style.display = 'none';
+    renderQs();
+    document.getElementById('qQs').style.display = 'block';
+  })
+  .catch(function(err) {
+    document.getElementById('qLoad').style.display = 'none';
+    document.getElementById('qSetup').style.display = 'block';
+    document.getElementById('gBtn').disabled = false;
+    document.getElementById('gErr').innerHTML = '<div class="errbox">⚠ ' + (err.message||'오류 발생') + '. 다시 시도해주세요.</div>';
+  });
+}
+
+function renderQs() {
+  var cont = document.getElementById('qQs');
+  var mcQs = CQs.filter(function(q){ return q.type==='mc'; });
+  var saQs = CQs.filter(function(q){ return q.type==='sa'; });
+  var h = '<div class="qhdr ain">' +
+    '<div class="qmeta"><span class="mbadge mc-badge">객관식 '+mcQs.length+'문제</span><span class="mbadge sa-badge">주관식 '+saQs.length+'문제</span></div>' +
+    '<button class="rbtn" onclick="resetQuiz()">✕ 다시 설정</button></div>';
+  CQs.forEach(function(q,i){ h += buildQHTML(q, i+1); });
+  h += '<div class="submit-area"><button class="subbtn" id="subBtn" onclick="submitQuiz()">채점하기</button>' +
+       '<div style="font-size:.78rem;color:var(--text3);">모든 문제를 풀고 채점하세요</div></div>';
+  cont.innerHTML = h;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildTable(tbl) {
+  if (!tbl || !tbl.headers || !tbl.rows) return '';
+  var h = '<div class="tbl-wrap"><table class="qtbl"><thead><tr>';
+  tbl.headers.forEach(function(th){ h += '<th>'+esc(th)+'</th>'; });
+  h += '</tr></thead><tbody>';
+  tbl.rows.forEach(function(row){
+    h += '<tr>';
+    (Array.isArray(row)?row:[row]).forEach(function(cell){ h += '<td>'+esc(String(cell))+'</td>'; });
+    h += '</tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+function buildQHTML(q, num) {
+  var inp = '';
+  if (q.type === 'mc') {
+    inp = '<div class="chgrid">';
+    (q.choices||[]).forEach(function(ch) {
+      inp += '<button class="chbtn" data-choice="'+esc(ch)+'" onclick="selChoice('+q.id+',this)">'+esc(ch)+'</button>';
+    });
+    inp += '</div>';
+  } else {
+    inp = '<input class="sainput" id="sa-'+q.id+'" placeholder="정답 입력..." type="text">';
+  }
+  return '<div class="qcard ain" id="qc-'+q.id+'">' +
+    '<div class="qhd">' +
+    '<div class="qnum '+q.type+'">'+(q.type==='mc'?'객':'주')+' '+num+'</div>' +
+    '<div class="qtxt">'+esc(q.question||'')+'</div>' +
+    '<div class="qtag">'+esc(q.topic||'')+'</div>' +
+    '</div>' +
+    buildTable(q.table) + inp +
+    '<div class="sol" id="sol-'+q.id+'">' +
+    '<div class="soltit">▶ 풀이 및 해설</div>' +
+    '<div class="soltxt">'+esc(q.solution||'')+'</div>' +
+    '<div class="solans" id="cl-'+q.id+'"></div>' +
+    '</div>' +
+    '<button class="save-q-btn" id="savebtn-'+q.id+'" onclick="saveQ('+q.id+')">📌 문제 저장</button>' +
+    '</div>';
+}
+
+function selChoice(qid, btn) {
+  btn.closest('.chgrid').querySelectorAll('.chbtn').forEach(function(b){ b.classList.remove('sel'); });
+  btn.classList.add('sel');
+  selCh[qid] = btn.getAttribute('data-choice');
+}
+
+function submitQuiz() {
+  for (var i = 0; i < CQs.length; i++) {
+    var q = CQs[i];
+    if (q.type==='mc' && !selCh[q.id]) { alert('모든 객관식 문제를 선택해주세요.'); return; }
+    if (q.type==='sa') { var el=document.getElementById('sa-'+q.id); if(!el||!el.value.trim()){alert('주관식 답을 입력해주세요.');return;} }
+  }
+  var ok = 0;
+  CQs.forEach(function(q) {
+    var card = document.getElementById('qc-'+q.id);
+    document.getElementById('sol-'+q.id).classList.add('show');
+    document.getElementById('cl-'+q.id).textContent = '정답: '+q.answer;
+    if (q.type==='mc') {
+      var ua=(selCh[q.id]||'').trim(), ra=(q.answer||'').trim(), good=ua===ra;
+      if(good) ok++;
+      card.querySelectorAll('.chbtn').forEach(function(b){
+        b.disabled=true;
+        var bc=(b.getAttribute('data-choice')||'').trim();
+        if(bc===ra) b.classList.add('ca');
+        else if(b.classList.contains('sel')&&!good) b.classList.add('wa');
+      });
+      card.classList.add(good?'ok':'ng');
+    } else {
+      var inp=document.getElementById('sa-'+q.id);
+      var uv=inp?inp.value.trim():'';
+      var norm=function(s){return s.replace(/\s+/g,'').toLowerCase();};
+      var good=norm(uv)===norm(String(q.answer));
+      if(good) ok++;
+      if(inp){inp.disabled=true;inp.classList.add(good?'ci':'wi');}
+      card.classList.add(good?'ok':'ng');
+    }
+  });
+  document.getElementById('subBtn').disabled = true;
+  showResult(ok, CQs.length);
+}
+
+function showResult(ok, tot) {
+  var pct=Math.round(ok/tot*100), cls=pct>=80?'hi':pct>=50?'mi':'lo';
+  var msg=pct===100?'🎉 완벽합니다!':pct>=80?'👍 잘했어요!':pct>=50?'😊 좋은 시도!':'📚 더 공부해봐요!';
+  var el=document.getElementById('qRes');
+  el.style.display='block';
+  el.innerHTML='<div class="divider"></div><div class="reshero ain">'+
+    '<div class="resscore '+cls+'">'+ok+' / '+tot+'</div>'+
+    '<div class="reslbl">'+msg+' &nbsp; 정답률 '+pct+'%</div>'+
+    '<div class="reschips"><span class="rchip rc-ok">✓ 정답 '+ok+'문제</span><span class="rchip rc-ng">✗ 오답 '+(tot-ok)+'문제</span></div>'+
+    '<div class="rebtns">'+
+    '<button class="rebtn pri" onclick="genQuiz()">새 문제 생성</button>'+
+    '<button class="rebtn sec" onclick="resetQuiz()">설정 변경</button>'+
+    '</div></div>';
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function resetQuiz() {
+  selCh={}; CQs=[];
+  document.getElementById('qSetup').style.display='block';
+  document.getElementById('qLoad').style.display='none';
+  document.getElementById('qQs').style.display='none'; document.getElementById('qQs').innerHTML='';
+  document.getElementById('qRes').style.display='none'; document.getElementById('qRes').innerHTML='';
+  document.getElementById('gBtn').disabled=false;
+}
+
+// ── SAVE SYSTEM ─────────────────────────────────────────────
+var savedList = [];
+
+function saveQ(qid) {
+  var q = null;
+  for (var i=0;i<CQs.length;i++) { if(CQs[i].id===qid){q=CQs[i];break;} }
+  if (!q) return;
+  for (var i=0;i<savedList.length;i++) {
+    if (savedList[i].question===q.question) {
+      var sb=document.getElementById('savebtn-'+qid);
+      if(sb){sb.textContent='✓ 이미 저장됨';sb.classList.add('saved');}
+      return;
+    }
+  }
+  savedList.push({ uid: Date.now(), type:q.type, topic:q.topic||'', question:q.question||'',
+    choices:q.choices||null, answer:q.answer||'', solution:q.solution||'', table:q.table||null });
+  var sb=document.getElementById('savebtn-'+qid);
+  if(sb){sb.textContent='✓ 저장됨';sb.classList.add('saved');}
+  updateBadge();
+}
+
+function updateBadge() {
+  var b=document.getElementById('savedBadge');
+  if(savedList.length>0){b.style.display='inline';b.textContent=savedList.length;}
+  else{b.style.display='none';}
+}
+
+function delSaved(uid) {
+  savedList = savedList.filter(function(q){ return q.uid!==uid; });
+  updateBadge(); renderSaved();
+}
+
+function clearSaved() {
+  if(confirm('저장된 문제를 모두 삭제할까요?')){ savedList=[]; updateBadge(); renderSaved(); }
+}
+
+// ── SAVED PRACTICE ──────────────────────────────────────────
+function spSelect(uid, btn) {
+  btn.closest('.chgrid').querySelectorAll('.chbtn').forEach(function(b){ b.classList.remove('sel'); });
+  btn.classList.add('sel');
+}
+
+function spSubmit(uid) {
+  var q = null;
+  for(var i=0;i<savedList.length;i++){if(savedList[i].uid===uid){q=savedList[i];break;}}
+  if(!q) return;
+  var resEl=document.getElementById('spres-'+uid);
+  var solEl=document.getElementById('spso-'+uid);
+  var subBtn=document.getElementById('spsb-'+uid);
+  var good=false;
+  if(q.type==='mc'){
+    var selBtn=document.querySelector('#spcard-'+uid+' .chbtn.sel');
+    if(!selBtn){alert('보기를 선택해주세요.');return;}
+    var ua=(selBtn.getAttribute('data-choice')||'').trim();
+    var ra=(q.answer||'').trim();
+    good=(ua===ra);
+    document.querySelector('#spcard-'+uid+' .chgrid').querySelectorAll('.chbtn').forEach(function(b){
+      b.disabled=true;
+      var bc=(b.getAttribute('data-choice')||'').trim();
+      if(bc===ra) b.classList.add('ca');
+      else if(b.classList.contains('sel')&&!good) b.classList.add('wa');
+    });
+  } else {
+    var inp=document.getElementById('spinp-'+uid);
+    if(!inp||!inp.value.trim()){alert('답을 입력해주세요.');return;}
+    var norm=function(s){return s.replace(/\s+/g,'').toLowerCase();};
+    good=norm(inp.value.trim())===norm(String(q.answer));
+    inp.disabled=true; inp.classList.add(good?'ci':'wi');
+  }
+  resEl.className='sp-result '+(good?'ok':'ng');
+  resEl.textContent=good?'✓ 정답입니다!':'✗ 오답. 정답: '+q.answer;
+  solEl.classList.add('show');
+  subBtn.disabled=true;
+}
+
+function spReset(uid) {
+  var q=null;
+  for(var i=0;i<savedList.length;i++){if(savedList[i].uid===uid){q=savedList[i];break;}}
+  if(!q) return;
+  document.getElementById('spres-'+uid).className='sp-result';
+  document.getElementById('spres-'+uid).textContent='';
+  document.getElementById('spso-'+uid).classList.remove('show');
+  document.getElementById('spsb-'+uid).disabled=false;
+  if(q.type==='mc'){
+    document.querySelector('#spcard-'+uid+' .chgrid').querySelectorAll('.chbtn').forEach(function(b){
+      b.disabled=false; b.classList.remove('sel','ca','wa');
+    });
+  } else {
+    var inp=document.getElementById('spinp-'+uid);
+    if(inp){inp.disabled=false;inp.value='';inp.className='sainput';}
+  }
+}
+
+function renderSaved() {
+  var c=document.getElementById('savedContent');
+  if(savedList.length===0){
+    c.innerHTML='<div class="saved-empty"><div class="ei">📂</div><p>저장된 문제가 없습니다.<br>기출문제 탭에서 풀고 <b>📌 문제 저장</b>을 눌러보세요.</p></div>';
+    return;
+  }
+  var h='<div class="saved-toolbar">'+
+    '<div class="saved-count">저장된 문제 <span>'+savedList.length+'</span>개</div>'+
+    '<button class="clr-btn" onclick="clearSaved()">전체 삭제</button></div>';
+
+  savedList.forEach(function(q) {
+    var uid=q.uid;
+    var inp='';
+    if(q.type==='mc'&&q.choices){
+      inp='<div class="chgrid" style="margin-top:14px;">';
+      q.choices.forEach(function(ch){
+        inp+='<button class="chbtn" data-choice="'+esc(ch)+'" onclick="spSelect('+uid+',this)">'+esc(ch)+'</button>';
+      });
+      inp+='</div>';
+    } else {
+      inp='<input class="sainput" id="spinp-'+uid+'" placeholder="답 입력..." type="text" style="margin-top:14px;">';
+    }
+    h+='<div class="saved-card ain" id="spcard-'+uid+'">' +
+      '<div class="saved-card-hd">' +
+      '<div class="saved-type '+q.type+'">'+(q.type==='mc'?'객관':'주관')+'</div>' +
+      '<div class="saved-q">'+esc(q.question)+'</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;margin-left:8px;">' +
+      '<div class="saved-topic">'+esc(q.topic)+'</div>' +
+      '<button class="saved-del" onclick="delSaved('+uid+')" title="삭제">✕</button>' +
+      '</div></div>' +
+      buildTable(q.table) + inp +
+      '<div class="sp-btns">' +
+      '<button class="sp-submit" id="spsb-'+uid+'" onclick="spSubmit('+uid+')">채점하기</button>' +
+      '<button class="sp-reset" onclick="spReset('+uid+')">↺ 다시 풀기</button>' +
+      '</div>' +
+      '<div class="sp-result" id="spres-'+uid+'"></div>' +
+      '<div class="saved-sol" id="spso-'+uid+'">' +
+      '<div class="soltit">▶ 풀이 및 해설</div>' +
+      '<div class="soltxt">'+esc(q.solution)+'</div>' +
+      '<div class="solans">정답: '+esc(q.answer)+'</div>' +
+      '</div></div>';
+  });
+  c.innerHTML=h;
+}
+
+// ── INIT ────────────────────────────────────────────────────
+initFC();
+</script>
+</body>
+</html>
