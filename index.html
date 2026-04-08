@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>화학 몰 계산 학습</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080f;--bg2:#0d1220;--bg3:#141a2e;
+  --card:#111827;--card2:#1a2340;
+  --border:#1e2d4a;--border2:#2a3d5e;
+  --accent:#3b82f6;--accent2:#60a5fa;
+  --gold:#f59e0b;--gold2:#fcd34d;
+  --green:#10b981;--red:#ef4444;--purple:#8b5cf6;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans KR",sans-serif;min-height:100vh;}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(59,130,246,.08),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 80%,rgba(245,158,11,.06),transparent 60%);pointer-events:none;z-index:0;}
+.wrap{max-width:960px;margin:0 auto;padding:36px 20px;position:relative;z-index:1;}
+.hdr{text-align:center;margin-bottom:40px;}
+.hdr-badge{display:inline-block;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(245,158,11,.15));border:1px solid rgba(59,130,246,.3);border-radius:100px;padding:6px 18px;font-size:.7rem;letter-spacing:.2em;color:var(--accent2);margin-bottom:12px;font-weight:500;}
+.hdr h1{font-family:"Noto Serif KR",serif;font-size:2.3rem;font-weight:700;background:linear-gradient(135deg,#e2e8f0,#94a3b8 50%,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;}
+.hdr p{color:var(--text3);font-size:.86rem;}
+.tabs{display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:5px;margin-bottom:30px;gap:4px;}
+.tab{flex:1;padding:10px 6px;border:none;border-radius:9px;background:transparent;color:var(--text3);cursor:pointer;font-family:"Noto Sans KR",sans-serif;font-size:.85rem;font-weight:500;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.tab.on{background:linear-gradient(135deg,var(--card2),rgba(59,130,246,.15));color:var(--accent2);border:1px solid rgba(59,130,246,.3);box-shadow:0 4px 20px rgba(59,130,246,.12);}
+.tab:hover:not(.on){color:var(--text2);background:rgba(255,255,255,.04);}
+.sec{display:none;}.sec.on{display:block;}
+/* FLASHCARD */
+.fc-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.fc-counter{font-size:.83rem;color:var(--text3);}
+.fc-counter b{color:var(--accent2);font-family:"JetBrains Mono",monospace;}
+.flip-hint{font-size:.74rem;color:var(--text3);}
+.scene{width:100%;height:290px;perspective:1200px;cursor:pointer;margin-bottom:20px;}
+.inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);}
+.inner.flipped{transform:rotateY(180deg);}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;border:1px solid var(--border2);padding:28px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;}
+.front{background:linear-gradient(145deg,var(--card2),#0f1a2e);box-shadow:0 8px 40px rgba(0,0,0,.4);}
+.front .badge{position:absolute;top:16px;right:16px;font-size:.66rem;color:var(--accent);background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:6px;padding:3px 9px;}
+.front .lbl{font-size:.7rem;letter-spacing:.15em;color:var(--gold);margin-bottom:14px;font-weight:600;}
+.front h2{font-family:"Noto Serif KR",serif;font-size:1.8rem;font-weight:700;color:#f1f5f9;line-height:1.3;}
+.front .en{margin-top:9px;font-size:.85rem;color:var(--text3);font-style:italic;}
+.back{background:linear-gradient(145deg,#0e1f14,#0a1810);border-color:rgba(16,185,129,.25);transform:rotateY(180deg);text-align:left;align-items:flex-start;overflow-y:auto;padding:22px 28px;}
+.back .blbl{font-size:.66rem;letter-spacing:.15em;color:var(--green);margin-bottom:12px;font-weight:600;}
+.btext{font-size:.88rem;line-height:2;color:var(--text);white-space:pre-line;}
+.fc-ctrl{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;}
+.cbtn{width:44px;height:44px;border-radius:11px;border:1px solid var(--border2);background:var(--card);color:var(--text2);cursor:pointer;font-size:1rem;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.cbtn:hover{background:var(--card2);border-color:var(--accent);color:var(--accent2);transform:scale(1.06);}
+.dots{display:flex;gap:5px;flex-wrap:wrap;max-width:260px;justify-content:center;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:all .3s;cursor:pointer;}
+.dot.on{background:var(--accent);transform:scale(1.4);}
+.chip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:20px;}
+.chip{padding:8px 13px;background:var(--card);border:1px solid var(--border);border-radius:9px;font-size:.78rem;color:var(--text2);cursor:pointer;transition:all .2s;}
+.chip:hover,.chip.on{background:var(--card2);border-color:var(--accent);color:var(--accent2);}
+/* SETUP */
+.setup-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;}
+.setup-title{font-family:"Noto Serif KR",serif;font-size:1.1rem;font-weight:600;margin-bottom:6px;color:#f1f5f9;}
+.setup-sub{font-size:.8rem;color:var(--text3);margin-bottom:22px;line-height:1.7;}
+.sec-lbl{font-size:.75rem;color:var(--text3);letter-spacing:.08em;margin-bottom:9px;font-weight:600;}
+.type-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px;margin-bottom:22px;}
+.type-btn{padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:"Noto Sans KR",sans-serif;font-size:.79rem;text-align:left;transition:all .2s;display:flex;align-items:center;gap:7px;line-height:1.5;}
+.type-btn:hover{border-color:var(--accent);color:var(--text);}
+.type-btn.on{border-color:var(--accent);background:rgba(59,130,246,.1);color:var(--accent2);}
+.diff-row{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+.diff-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text3);cursor:pointer;font-family:"Noto Sans KR",sans-serif;font-size:.8rem;transition:all .2s;}
+.diff-btn.on{border-color:var(--gold);background:rgba(245,158,11,.1);color:var(--gold2);}
+.count-row{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+.count-lbl{font-size:.8rem;color:var(--text2);}
+.nbtn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:var(--card);color:var(--text);cursor:pointer;font-size:.95rem;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.nbtn:hover{background:var(--accent);border-color:var(--accent);}
+.ndisp{font-family:"JetBrains Mono",monospace;font-size:1.4rem;font-weight:600;color:#f1f5f9;min-width:28px;text-align:center;}
+.gbtn{width:100%;padding:15px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--accent),#2563eb);color:white;font-family:"Noto Sans KR",sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 4px 24px rgba(59,130,246,.3);}
+.gbtn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(59,130,246,.4);}
+/* QUIZ */
+.qhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;}
+.qmeta{display:flex;gap:7px;flex-wrap:wrap;}
+.qbadge{padding:3px 10px;border-radius:5px;font-size:.7rem;font-weight:600;}
+.qb-mc{background:rgba(59,130,246,.15);color:var(--accent2);border:1px solid rgba(59,130,246,.25);}
+.qb-sa{background:rgba(245,158,11,.15);color:var(--gold2);border:1px solid rgba(245,158,11,.25);}
+.qb-tbl{background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.25);}
+.rbtn{padding:6px 13px;border:1px solid var(--border2);border-radius:7px;background:transparent;color:var(--text3);cursor:pointer;font-family:"Noto Sans KR",sans-serif;font-size:.76rem;transition:all .2s;}
+.rbtn:hover{border-color:var(--red);color:var(--red);}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:24px;margin-bottom:12px;transition:border-color .3s;}
+.qcard.ok{border-color:rgba(16,185,129,.5);}.qcard.ng{border-color:rgba(239,68,68,.5);}
+.qhd{display:flex;align-items:flex-start;gap:11px;margin-bottom:13px;}
+.qnum{min-width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-size:.76rem;font-weight:700;flex-shrink:0;}
+.qnum.mc{background:rgba(59,130,246,.15);color:var(--accent2);border:1px solid rgba(59,130,246,.25);}
+.qnum.sa{background:rgba(245,158,11,.15);color:var(--gold2);border:1px solid rgba(245,158,11,.25);}
+.qtag{font-size:.66rem;color:var(--text3);border:1px solid var(--border);border-radius:4px;padding:2px 7px;margin-left:auto;flex-shrink:0;white-space:nowrap;}
+.qtxt{font-size:.93rem;line-height:1.9;color:var(--text);flex:1;}
+.qtbl-wrap{margin:10px 0;border-radius:9px;overflow:hidden;border:1px solid var(--border2);}
+.qtbl{width:100%;border-collapse:collapse;font-size:.83rem;}
+.qtbl th{background:var(--bg3);color:var(--accent2);padding:8px 13px;text-align:center;font-weight:600;font-size:.75rem;border-bottom:1px solid var(--border2);}
+.qtbl td{padding:8px 13px;text-align:center;border-bottom:1px solid var(--border);color:var(--text2);font-family:"JetBrains Mono",monospace;font-size:.82rem;}
+.qtbl tr:last-child td{border-bottom:none;}
+.chgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px;}
+.chbtn{padding:10px 13px;border-radius:9px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:"Noto Sans KR",sans-serif;font-size:.84rem;text-align:left;transition:all .2s;line-height:1.5;}
+.chbtn:hover:not(:disabled){border-color:var(--accent);background:rgba(59,130,246,.08);color:var(--text);}
+.chbtn.sel{border-color:var(--accent);background:rgba(59,130,246,.12);color:var(--accent2);}
+.chbtn.ca{border-color:var(--green)!important;background:rgba(16,185,129,.12)!important;color:#6ee7b7!important;}
+.chbtn.wa{border-color:var(--red)!important;background:rgba(239,68,68,.1)!important;color:#fca5a5!important;}
+.sainput{width:100%;margin-top:11px;padding:10px 13px;border-radius:9px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-family:"JetBrains Mono",monospace;font-size:.93rem;outline:none;transition:border-color .2s;}
+.sainput:focus{border-color:var(--accent);}
+.sainput.ci{border-color:var(--green);background:rgba(16,185,129,.06);}
+.sainput.wi{border-color:var(--red);background:rgba(239,68,68,.06);}
+/* STEP SOLUTION */
+.sol{margin-top:13px;padding:14px 16px;border-radius:10px;background:linear-gradient(135deg,rgba(16,185,129,.05),rgba(59,130,246,.04));border:1px solid rgba(16,185,129,.18);display:none;}
+.sol.show{display:block;}
+.sol-title{font-size:.7rem;letter-spacing:.1em;color:var(--green);font-weight:700;margin-bottom:10px;}
+.steps{display:flex;flex-direction:column;gap:7px;}
+.step{display:flex;gap:9px;align-items:flex-start;}
+.step-num{min-width:22px;height:22px;border-radius:50%;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:var(--green);font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.step-txt{font-size:.83rem;line-height:1.8;color:var(--text2);white-space:pre-line;font-family:"JetBrains Mono",monospace;}
+.ans-line{margin-top:9px;padding:8px 12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:7px;font-size:.8rem;color:var(--gold2);font-weight:600;font-family:"JetBrains Mono",monospace;}
+.save-btn{margin-top:10px;padding:5px 13px;border:1px solid rgba(139,92,246,.35);border-radius:7px;background:rgba(139,92,246,.08);color:#a78bfa;font-family:"Noto Sans KR",sans-serif;font-size:.74rem;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;}
+.save-btn:hover{background:rgba(139,92,246,.18);}
+.save-btn.saved{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4);color:#6ee7b7;}
+.submit-area{margin-top:22px;display:flex;flex-direction:column;align-items:center;gap:9px;}
+.subbtn{padding:13px 42px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--gold),#d97706);color:#1a0e00;font-family:"Noto Sans KR",sans-serif;font-size:.93rem;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 4px 24px rgba(245,158,11,.3);}
+.subbtn:hover{transform:translateY(-2px);}
+.subbtn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+/* RESULT */
+.reshero{text-align:center;padding:30px 20px;background:var(--card);border:1px solid var(--border);border-radius:18px;margin-top:18px;}
+.resscore{font-family:"JetBrains Mono",monospace;font-size:3.8rem;font-weight:600;line-height:1;margin-bottom:9px;}
+.resscore.hi{color:var(--green);}.resscore.mi{color:var(--gold);}.resscore.lo{color:var(--red);}
+.reslbl{font-size:.9rem;color:var(--text2);margin-bottom:14px;}
+.reschips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:18px;}
+.rchip{padding:4px 12px;border-radius:100px;font-size:.76rem;font-weight:600;}
+.rc-ok{background:rgba(16,185,129,.15);color:#6ee7b7;}.rc-ng{background:rgba(239,68,68,.15);color:#fca5a5;}
+.rebtns{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;}
+.rebtn{padding:9px 22px;border-radius:9px;font-family:"Noto Sans KR",sans-serif;font-size:.84rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.rebtn.pri{background:var(--accent);border:none;color:white;}
+.rebtn.sec{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.rebtn.sec:hover{border-color:var(--text2);color:var(--text);}
+/* SAVED */
+.saved-empty{text-align:center;padding:50px 20px;color:var(--text3);}
+.saved-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:9px;}
+.scount{font-size:.82rem;color:var(--text2);}
+.scount b{color:var(--accent2);font-family:"JetBrains Mono",monospace;}
+.clr-btn{padding:6px 13px;border:1px solid rgba(239,68,68,.3);border-radius:7px;background:transparent;color:var(--red);font-family:"Noto Sans KR",sans-serif;font-size:.75rem;cursor:pointer;transition:all .2s;}
+.clr-btn:hover{background:rgba(239,68,68,.1);}
+.scard{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:20px;margin-bottom:10px;}
+.scard-hd{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;}
+.stype{min-width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;flex-shrink:0;}
+.stype.mc{background:rgba(59,130,246,.15);color:var(--accent2);border:1px solid rgba(59,130,246,.25);}
+.stype.sa{background:rgba(245,158,11,.15);color:var(--gold2);border:1px solid rgba(245,158,11,.25);}
+.sq{font-size:.9rem;line-height:1.8;color:var(--text);flex:1;}
+.stopic{font-size:.65rem;color:var(--text3);border:1px solid var(--border);border-radius:4px;padding:2px 6px;white-space:nowrap;}
+.sdel{width:24px;height:24px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-size:.84rem;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.sdel:hover{border-color:var(--red);color:var(--red);}
+.sp-btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:11px;}
+.sp-sub{padding:7px 18px;border:none;border-radius:7px;background:linear-gradient(135deg,var(--gold),#d97706);color:#1a0e00;font-family:"Noto Sans KR",sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;}
+.sp-sub:disabled{opacity:.4;cursor:not-allowed;}
+.sp-rst{padding:6px 12px;border:1px solid var(--border2);border-radius:7px;background:transparent;color:var(--text3);font-family:"Noto Sans KR",sans-serif;font-size:.76rem;cursor:pointer;transition:all .2s;}
+.sp-rst:hover{border-color:var(--accent2);color:var(--accent2);}
+.sp-res{margin-top:8px;padding:8px 12px;border-radius:6px;font-size:.82rem;font-weight:600;display:none;}
+.sp-res.ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#6ee7b7;display:block;}
+.sp-res.ng{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;display:block;}
+.ssol{margin-top:10px;padding:13px 15px;border-radius:9px;background:linear-gradient(135deg,rgba(16,185,129,.05),rgba(59,130,246,.03));border:1px solid rgba(16,185,129,.18);display:none;}
+.ssol.show{display:block;}
+.divider{height:1px;background:var(--border);margin:20px 0;}
+.ain{animation:fup .3s ease forwards;}
+@keyframes fup{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@media(max-width:560px){.hdr h1{font-size:1.6rem;}.chgrid{grid-template-columns:1fr;}.type-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="hdr ain">
+  <div class="hdr-badge">&#9883; CHEMISTRY STUDY</div>
+  <h1>원자량 학습 프로그램</h1>
+  <p>플래시카드 &middot; 템플릿 기반 무한 문제 생성 (API 불필요) &middot; 단계별 풀이 &middot; 문제 저장</p>
+</div>
+<div class="tabs">
+  <button class="tab on" id="tab-fc" onclick="goTab('fc')">&#127183; 플래시카드</button>
+  <button class="tab" id="tab-quiz" onclick="goTab('quiz')">&#128221; 문제 풀기</button>
+  <button class="tab" id="tab-saved" onclick="goTab('saved')">&#128190; 저장<span id="sbadge" style="display:none;background:var(--purple);color:white;border-radius:100px;padding:1px 6px;font-size:.65rem;margin-left:4px;"></span></button>
+</div>
+
+<!-- FLASHCARD -->
+<div class="sec on" id="sec-fc">
+  <div class="fc-nav">
+    <div class="fc-counter"><b id="fcN">1</b> / <b id="fcT">10</b></div>
+    <div class="flip-hint">&#8634; 클릭하여 뒤집기</div>
+  </div>
+  <div class="scene" onclick="flipFC()">
+    <div class="inner" id="fcInner">
+      <div class="face front">
+        <div class="badge" id="fcBadge"></div>
+        <div class="lbl">CONCEPT</div>
+        <h2 id="fcFront"></h2>
+        <div class="en" id="fcEn"></div>
+      </div>
+      <div class="face back">
+        <div class="blbl">EXPLANATION</div>
+        <div class="btext" id="fcBack"></div>
+      </div>
+    </div>
+  </div>
+  <div class="fc-ctrl">
+    <button class="cbtn" onclick="prevFC()">&#9664;</button>
+    <div class="dots" id="fcDots"></div>
+    <button class="cbtn" onclick="nextFC()">&#9654;</button>
+  </div>
+  <div class="divider"></div>
+  <div class="sec-lbl">빠른 이동</div>
+  <div class="chip-grid" id="fcChips"></div>
+</div>
+
+<!-- QUIZ -->
+<div class="sec" id="sec-quiz">
+  <div id="qSetup">
+    <div class="setup-card ain">
+      <div class="setup-title">문제 설정</div>
+      <div class="setup-sub">
+        템플릿 기반 자동 생성 &mdash; 매번 숫자가 달라지고 정답은 공식으로 자동 계산됩니다.<br>
+        단계별 풀이 &middot; 표 포함 문제 &middot; 객관식 &middot; 주관식 모두 지원합니다.
+      </div>
+      <div class="sec-lbl">문제 유형 선택</div>
+      <div class="type-grid" id="typeGrid"></div>
+      <div class="divider"></div>
+      <div class="sec-lbl">난이도</div>
+      <div class="diff-row">
+        <button class="diff-btn on" id="d-easy" onclick="setDiff('easy')">&#9679; 쉬움</button>
+        <button class="diff-btn" id="d-mid" onclick="setDiff('mid')">&#9632; 보통</button>
+        <button class="diff-btn" id="d-hard" onclick="setDiff('hard')">&#9650; 어려움</button>
+        <button class="diff-btn" id="d-all" onclick="setDiff('all')">&#9733; 혼합</button>
+      </div>
+      <div class="divider"></div>
+      <div class="count-row">
+        <span class="count-lbl">문제 수</span>
+        <button class="nbtn" onclick="chgN(-1)">&#8722;</button>
+        <div class="ndisp" id="nDisp">5</div>
+        <button class="nbtn" onclick="chgN(1)">+</button>
+        <span class="count-lbl" style="color:var(--text3)">문제</span>
+      </div>
+      <button class="gbtn" onclick="genQuiz()">&#9654;&#65039; 문제 생성하기</button>
+    </div>
+  </div>
+  <div id="qQs" style="display:none"></div>
+  <div id="qRes" style="display:none"></div>
+</div>
+
+<!-- SAVED -->
+<div class="sec" id="sec-saved">
+  <div id="savedWrap"></div>
+</div>
+</div><!-- /wrap -->
+
+<script>
+// ════════════════════════════════════════════════
+//  유틸
+// ════════════════════════════════════════════════
+function r(min,max,step){step=step||1;return min+Math.floor(Math.random()*Math.floor((max-min)/step+1))*step;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function pickN(a,n){var b=a.slice(),o=[];for(var i=0;i<n&&b.length;i++){var x=Math.floor(Math.random()*b.length);o.push(b.splice(x,1)[0]);}return o;}
+function rnd(v,d){var m=Math.pow(10,d||2);return Math.round(v*m)/m;}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+function fn(v){var x=rnd(v,3);return x===Math.floor(x)?String(Math.floor(x)):String(x);}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+var L=["①","②","③","④"];
+
+// ════════════════════════════════════════════════
+//  데이터
+// ════════════════════════════════════════════════
+var MV=22.4, NA62=6.02;
+var MOLS=[
+  {f:"H₂O",  m:18,  a:3,n:"물"},
+  {f:"CO₂",  m:44,  a:3,n:"이산화탄소"},
+  {f:"NaCl",      m:58.5,a:2,n:"염화나트륨"},
+  {f:"NH₃",  m:17,  a:4,n:"암모니아"},
+  {f:"CH₄",  m:16,  a:5,n:"메테인"},
+  {f:"O₂",   m:32,  a:2,n:"산소"},
+  {f:"N₂",   m:28,  a:2,n:"질소"},
+  {f:"HCl",       m:36.5,a:2,n:"염화수소"},
+  {f:"SO₂",  m:64,  a:3,n:"이산화황"},
+  {f:"H₂SO₄",m:98,a:7,n:"황산"},
+  {f:"NaOH",      m:40,  a:3,n:"수산화나트륨"},
+  {f:"CaCO₃",m:100, a:5,n:"탄산칼싘"},
+  {f:"C₆H₁₂O₆",m:180,a:24,n:"포도당"},
+];
+
+function wrongs(c){
+  var s=[c],t=0;
+  while(s.length<4&&t<300){t++;
+    var w,x=Math.random();
+    if(x<0.3)w=rnd(c*(0.3+Math.random()*1.8),2);
+    else if(x<0.6)w=rnd(c*(0.5+Math.random()),2);
+    else w=rnd(c+(Math.random()-.5)*c*1.5,2);
+    if(w>0&&w!==c&&s.indexOf(w)===-1)s.push(w);
+  }
+  return s.slice(1,4);
+}
+
+// q 생성 헬퍼
+function MC(q,corr,unit,ws,topic,steps){
+  var ch=shuffle([corr].concat((ws||wrongs(corr)).slice(0,3)));
+  var ci=ch.indexOf(corr);
+  return {type:"mc",topic:topic,question:q,tbl:null,
+    choices:ch.map(function(v,i){return L[i]+" "+fn(v)+(unit?" "+unit:"");}),
+    answer:L[ci]+" "+fn(corr)+(unit?" "+unit:""),
+    steps:steps||[]};
+}
+function SA(q,ans,topic,steps){
+  return {type:"sa",topic:topic,question:q,tbl:null,answer:String(ans),steps:steps||[]};
+}
+function withTable(qObj,headers,rows){qObj.tbl={headers:headers,rows:rows};return qObj;}
+
+// ════════════════════════════════════════════════
+//  템플릿
+// ════════════════════════════════════════════════
+var TM={
+
+// ── 1. 몰 수 계산 ──────────────────────────────
+mol_from_mass:[
+  function(d){
+    var s=pick(MOLS);
+    var g=r(d>0?5:1,d>1?500:d>0?200:50,d>0?5:1);
+    var mol=rnd(g/s.m,3);
+    return SA(s.f+" "+g+"g은 몇 mol인가? (몰질량="+s.m+"g/mol)",fn(mol)+" mol","몰 수 계산",[
+      "몰 수 = 질량 ÷ 몰질량",
+      g+" ÷ "+s.m+" = "+fn(mol)+" mol"
+    ]);
+  },
+  function(d){
+    var s=pick(MOLS);
+    var mol=r(d>0?1:1,d>1?20:d>0?10:5,1);
+    var g=rnd(mol*s.m,2);
+    return SA(s.f+" "+mol+"mol의 질량은 몇 g인가?",fn(g)+" g","몰 수 계산",[
+      "질량 = 몰 수 × 몰질량",
+      mol+" × "+s.m+" = "+fn(g)+" g"
+    ]);
+  },
+  function(d){
+    var s=pick(MOLS);
+    var g=r(d>0?5:1,d>1?400:d>0?200:50,d>0?5:1);
+    var mol=rnd(g/s.m,3);
+    return MC(s.f+" "+g+"g은 몇 mol인가? (몰질량="+s.m+"g/mol)",mol,"mol",wrongs(mol),"몰 수 계산",[
+      "몰 수 = 질량 ÷ 몰질량",
+      g+" ÷ "+s.m+" = "+fn(mol)+" mol"
+    ]);
+  },
+  function(d){ // 표 포함: 여러 물질의 몰 수
+    var items=pickN(MOLS,3);
+    var masses=items.map(function(){return r(d>0?5:2,d>1?200:d>0?100:50,d>0?5:2);});
+    var mols=items.map(function(s,i){return rnd(masses[i]/s.m,3);});
+    var idx=Math.floor(Math.random()*3);
+    var qo=withTable(
+      SA("다음 표를 참고하여 "+items[idx].f+" "+masses[idx]+"g의 몰 수를 구하시오.",fn(mols[idx])+" mol","몰 수 계산",[
+        "몰 수 = 질량 ÷ 몰질량",
+        masses[idx]+" ÷ "+items[idx].m+" = "+fn(mols[idx])+" mol"
+      ]),
+      ["물질","분자식","몰질량(g/mol)"],
+      items.map(function(s){return [s.n,s.f,String(s.m)];})
+    );
+    return qo;
+  },
+],
+
+// ── 2. 분자 수 계산 ────────────────────────────
+particle_count:[
+  function(d){
+    var s=pick(MOLS);
+    var mol=r(d>0?1:1,d>1?20:d>0?10:5,1);
+    var cnt=rnd(mol*NA62,3);
+    return SA(s.f+" "+mol+"mol에 들어있는 분자 수는? (Nₐ=6.02×10²³)",cnt+"×10²³ 개","분자 수 계산",[
+      "분자 수 = 몰 수 × Nₐ",
+      mol+" × 6.02×10²³ = "+cnt+"×10²³ 개"
+    ]);
+  },
+  function(d){
+    var s=pick(MOLS.filter(function(x){return x.a>1;}));
+    var mol=r(d>0?1:1,d>1?10:d>0?5:3,1);
+    var cnt=rnd(mol*s.a*NA62,3);
+    return SA(s.f+" "+mol+"mol에 들어있는 원자의 총 수는? (Nₐ=6.02×10²³, "+s.f+" 1분자=원자 "+s.a+"개)",cnt+"×10²³ 개","분자 수 계산",[
+      "원자 수 = 몰 수 × 분자당 원자 수 × Nₐ",
+      mol+" × "+s.a+" × 6.02×10²³ = "+cnt+"×10²³ 개"
+    ]);
+  },
+  function(d){
+    var s=pick(MOLS);
+    var g=r(d>0?5:1,d>1?200:d>0?100:50,d>0?5:1);
+    var mol=rnd(g/s.m,3);
+    var cnt=rnd(mol*NA62,3);
+    var ws=[rnd(cnt*2,3),rnd(cnt/2,3),rnd(g*NA62/100,3)];
+    return MC(s.f+" "+g+"g에 포함된 분자 수는? (몰질량="+s.m+", Nₐ=6.02×10²³)",cnt,"×10²³ 개",ws,"분자 수 계산",[
+      "몰 수 = "+g+" ÷ "+s.m+" = "+fn(mol)+" mol",
+      "분자 수 = "+fn(mol)+" × 6.02×10²³ = "+cnt+"×10²³ 개"
+    ]);
+  },
+  function(d){ // 표: 몰→분자수 비교
+    var items=pickN(MOLS,3);
+    var mols=[r(1,5,1),r(1,5,1),r(1,5,1)];
+    var cnts=mols.map(function(m){return rnd(m*NA62,3);});
+    var idx=Math.floor(Math.random()*3);
+    return withTable(
+      SA("다음 표를 이용하여 "+items[idx].f+" "+mols[idx]+"mol의 분자 수를 구하시오. (Nₐ=6.02×10²³)",cnts[idx]+"×10²³ 개","분자 수 계산",[
+        "분자 수 = 몰 수 × Nₐ",
+        mols[idx]+" × 6.02×10²³ = "+cnts[idx]+"×10²³ 개"
+      ]),
+      ["물질","몰 수(mol)","분자 수"],
+      items.map(function(s,i){return [s.f,String(mols[i]),cnts[i]+"×10²³"];})
+    );
+  },
+],
+
+// ── 3. 기체 부피 (STP) ─────────────────────────
+gas_volume:[
+  function(d){
+    var s=pick(MOLS.filter(function(x){return x.a<=3&&x.m<=64;}));
+    var mol=r(d>0?1:1,d>1?20:d>0?10:5,1);
+    var vol=rnd(mol*MV,2);
+    return SA("STP에서 "+s.f+" "+mol+"mol의 부피는? (몰 부피=22.4L/mol)",fn(vol)+" L","기체 부피",[
+      "부피 = 몰 수 × 몰 부피",
+      mol+" × 22.4 = "+fn(vol)+" L"
+    ]);
+  },
+  function(d){
+    var s=pick(MOLS.filter(function(x){return x.a<=3&&x.m<=64;}));
+    var vols=[11.2,22.4,33.6,44.8,56,67.2,89.6,112];
+    var vol=pick(vols);
+    var mol=rnd(vol/MV,3);
+    return SA("STP에서 "+s.f+" "+vol+"L의 몰 수는?",fn(mol)+" mol","기체 부피",[
+      "몰 수 = 부피 ÷ 몰 부피",
+      vol+" ÷ 22.4 = "+fn(mol)+" mol"
+    ]);
+  },
+  function(d){
+    var s=pick(MOLS.filter(function(x){return x.a<=3&&x.m<=64;}));
+    var g=r(d>0?s.m/2:s.m,d>1?s.m*20:d>0?s.m*10:s.m*5,s.m/2);
+    var mol=rnd(g/s.m,3);
+    var vol=rnd(mol*MV,2);
+    return MC("STP에서 "+s.f+" "+g+"g의 부피는? (몰질량="+s.m+")",vol,"L",wrongs(vol),"기체 부피",[
+      "몰 수 = "+g+" ÷ "+s.m+" = "+fn(mol)+" mol",
+      "부피 = "+fn(mol)+" × 22.4 = "+fn(vol)+" L"
+    ]);
+  },
+  function(d){ // 표: 여러 기체의 STP 부피 비교
+    var gases=pickN(MOLS.filter(function(x){return x.m<=64&&x.a<=3;}),3);
+    var mols=[r(1,5,1),r(1,5,1),r(1,5,1)];
+    var vols=mols.map(function(m){return rnd(m*MV,2);});
+    var idx=Math.floor(Math.random()*3);
+    return withTable(
+      MC("다음 표에서 "+gases[idx].f+" "+mols[idx]+"mol의 STP 부피는?",vols[idx],"L",wrongs(vols[idx]),"기체 부피",[
+        "부피 = 몰 수 × 22.4",
+        mols[idx]+" × 22.4 = "+fn(vols[idx])+" L"
+      ]),
+      ["기체","몰 수(mol)","STP 부피(L)"],
+      gases.map(function(s,i){return [s.f,String(mols[i]),fn(vols[i])];})
+    );
+  },
+],
+
+// ── 4. 백분율 조성 ─────────────────────────────
+percent_comp:[
+  function(d){
+    var pairs=[
+      {s:"H₂O",m:18,at:"O",am:16,n:1},{s:"H₂O",m:18,at:"H",am:1,n:2},
+      {s:"CO₂",m:44,at:"C",am:12,n:1},{s:"CO₂",m:44,at:"O",am:16,n:2},
+      {s:"NH₃",m:17,at:"N",am:14,n:1},{s:"NH₃",m:17,at:"H",am:1,n:3},
+      {s:"CH₄",m:16,at:"C",am:12,n:1},{s:"SO₂",m:64,at:"S",am:32,n:1},
+      {s:"NaCl",m:58.5,at:"Na",am:23,n:1},{s:"NaCl",m:58.5,at:"Cl",am:35.5,n:1},
+      {s:"H₂SO₄",m:98,at:"S",am:32,n:1},{s:"NaOH",m:40,at:"Na",am:23,n:1},
+    ];
+    var p=pick(pairs);
+    var pct=rnd(p.am*p.n/p.m*100,2);
+    return SA(p.s+"에서 "+p.at+"의 질량 백분율은? (몰질량="+p.m+")",fn(pct)+"%","백분율 조성",[
+      "질량% = (원소 원자량×개수) ÷ 분자량 × 100",
+      "("+p.am+"×"+p.n+") ÷ "+p.m+" × 100 = "+fn(pct)+"%"
+    ]);
+  },
+  function(d){
+    var pairs=[
+      {s:"H₂O",m:18,at:"O",am:16,n:1},
+      {s:"CO₂",m:44,at:"O",am:16,n:2},
+      {s:"NH₃",m:17,at:"N",am:14,n:1},
+      {s:"SO₂",m:64,at:"S",am:32,n:1},
+      {s:"NaCl",m:58.5,at:"Na",am:23,n:1},
+    ];
+    var p=pick(pairs);
+    var c=rnd(p.am*p.n/p.m*100,2);
+    return MC(p.s+"에서 "+p.at+"의 질량 백분율은? (몰질량="+p.m+")",c,"%",wrongs(c),"백분율 조성",[
+      "질량% = ("+p.am+"×"+p.n+") ÷ "+p.m+" × 100",
+      "= "+fn(c)+"%"
+    ]);
+  },
+  function(d){ // 표: 여러 원소의 조성 한눈에
+    var cases=[
+      {s:"H₂O",m:18,els:[{at:"H",am:1,n:2},{at:"O",am:16,n:1}]},
+      {s:"CO₂",m:44,els:[{at:"C",am:12,n:1},{at:"O",am:16,n:2}]},
+      {s:"NH₃",m:17,els:[{at:"N",am:14,n:1},{at:"H",am:1,n:3}]},
+      {s:"NaCl",m:58.5,els:[{at:"Na",am:23,n:1},{at:"Cl",am:35.5,n:1}]},
+    ];
+    var c=pick(cases);
+    var pcts=c.els.map(function(e){return rnd(e.am*e.n/c.m*100,2);});
+    var idx=Math.floor(Math.random()*c.els.length);
+    return withTable(
+      SA("다음 표는 "+c.s+"의 조성을 나타낸다. 빈칸 "+c.els[idx].at+"%를 구하시오.",fn(pcts[idx])+"%","백분율 조성",[
+        c.els[idx].at+"% = ("+c.els[idx].am+"×"+c.els[idx].n+") ÷ "+c.m+" × 100",
+        "= "+fn(pcts[idx])+"%"
+      ]),
+      ["원소","원자량","개수","질량%"],
+      c.els.map(function(e,i){return [e.at,String(e.am),String(e.n),i===idx?"?":fn(pcts[i])+"%"];})
+    );
+  },
+],
+
+// ── 5. 혼합 기체 ──────────────────────────────
+mixed_gas:[
+  function(d){
+    var gs=pickN(MOLS.filter(function(x){return x.m<=64&&x.a<=3;}),2);
+    var m1=r(1,d>1?10:d>0?7:5,1),m2=r(1,d>1?10:d>0?7:5,1);
+    var tv=rnd((m1+m2)*MV,1);
+    return SA("STP에서 "+gs[0].f+" "+m1+"mol과 "+gs[1].f+" "+m2+"mol을 혼합하면 전체 부피는?",fn(tv)+" L","혼합 기체",[
+      "전체 몰 수 = "+m1+"+"+m2+" = "+(m1+m2)+" mol",
+      "전체 부피 = "+(m1+m2)+" × 22.4 = "+fn(tv)+" L"
+    ]);
+  },
+  function(d){
+    var gs=pickN(MOLS.filter(function(x){return x.m<=64&&x.a<=3;}),2);
+    var vols=[11.2,22.4,44.8,67.2];
+    var v1=pick(vols),v2=pick(vols);
+    var mol1=rnd(v1/MV,2),mol2=rnd(v2/MV,2);
+    var tm=rnd(mol1*gs[0].m+mol2*gs[1].m,2);
+    return SA("STP에서 "+gs[0].f+" "+v1+"L와 "+gs[1].f+" "+v2+"L를 혼합한 기체의 총 질량은?",fn(tm)+" g","혼합 기체",[
+      gs[0].f+": "+v1+" ÷ 22.4 = "+fn(mol1)+"mol → "+fn(mol1)+"×"+gs[0].m+"="+rnd(mol1*gs[0].m,2)+"g",
+      gs[1].f+": "+v2+" ÷ 22.4 = "+fn(mol2)+"mol → "+fn(mol2)+"×"+gs[1].m+"="+rnd(mol2*gs[1].m,2)+"g",
+      "총 질량 = "+fn(tm)+" g"
+    ]);
+  },
+  function(d){ // 객관식
+    var gs=pickN(MOLS.filter(function(x){return x.m<=64&&x.a<=3;}),2);
+    var m1=r(1,d>1?8:5,1),m2=r(1,d>1?8:5,1);
+    var tv=rnd((m1+m2)*MV,1);
+    return MC("STP에서 "+gs[0].f+" "+m1+"mol과 "+gs[1].f+" "+m2+"mol 혼합 기체의 전체 부피는?",tv,"L",wrongs(tv),"혼합 기체",[
+      "전체 몰 수 = "+(m1+m2)+" mol",
+      "부피 = "+(m1+m2)+" × 22.4 = "+fn(tv)+" L"
+    ]);
+  },
+  function(d){ // 표 포함: 세 기체 혼합
+    var gs=pickN(MOLS.filter(function(x){return x.m<=64&&x.a<=3;}),3);
+    var ms=[r(1,5,1),r(1,5,1),r(1,5,1)];
+    var tot=ms[0]+ms[1]+ms[2];
+    var tv=rnd(tot*MV,1);
+    return withTable(
+      SA("다음 표는 STP에서 혼합 기체의 조성을 나타낸다. 전체 부피를 구하시오.",fn(tv)+" L","혼합 기체",[
+        "전체 몰 수 = "+ms[0]+"+"+ms[1]+"+"+ms[2]+" = "+tot+" mol",
+        "전체 부피 = "+tot+" × 22.4 = "+fn(tv)+" L"
+      ]),
+      ["기체","몰 수(mol)","몰질량(g/mol)"],
+      gs.map(function(s,i){return [s.f,String(ms[i]),String(s.m)];})
+    );
+  },
+],
+
+// ── 6. 반응식 몰비 ────────────────────────────
+reaction_mol:[
+  function(d){
+    var mol=r(d>0?1:2,d>1?40:d>0?20:10,d>0?1:2);
+    var o2=rnd(mol/2,3);
+    return MC("2H₂+O₂→2H₂O 반응에서 H₂ "+mol+"mol 완전 반응 시 필요한 O₂의 몰 수는?",o2,"mol",wrongs(o2),"반응식 몰비",[
+      "H₂:O₂ = 2:1 비율",
+      "O₂ = "+mol+" ÷ 2 = "+fn(o2)+" mol"
+    ]);
+  },
+  function(d){
+    var mol=r(d>0?1:1,d>1?20:d>0?10:5,1);
+    var nh3=rnd(mol*2,3);
+    return MC("N₂+3H₂→2NH₃ 반응에서 N₂ "+mol+"mol 반응 시 생성되는 NH₃의 몰 수는?",nh3,"mol",wrongs(nh3),"반응식 몰비",[
+      "N₂:NH₃ = 1:2 비율",
+      "NH₃ = "+mol+" × 2 = "+fn(nh3)+" mol"
+    ]);
+  },
+  function(d){
+    var mol=r(d>0?1:1,d>1?15:d>0?8:5,1);
+    var cm=rnd(mol*44,2);
+    return SA("CH₄+2O₂→CO₂+2H₂O 반응에서 CH₄ "+mol+"mol 완전 연소 시 생성되는 CO₂의 질량은?",fn(cm)+" g","반응식 몰비",[
+      "CH₄:CO₂ = 1:1 비율 → CO₂ = "+mol+" mol",
+      "질량 = "+mol+" × 44 = "+fn(cm)+" g"
+    ]);
+  },
+  function(d){ // 표 포함: 반응 전후 몰 비교
+    var mol_n2=r(d>0?1:1,d>1?10:d>0?5:3,1);
+    var mol_h2=mol_n2*3;
+    var mol_nh3=mol_n2*2;
+    var idx=Math.floor(Math.random()*2);
+    var ans=idx===0?fn(mol_h2)+" mol":fn(mol_nh3)+" mol";
+    var qTxt=idx===0
+      ?"다음 표를 참고하여 N₂ "+mol_n2+"mol이 완전 반응할 때 필요한 H₂의 몰 수를 구하시오."
+      :"다음 표를 참고하여 N₂ "+mol_n2+"mol이 완전 반응할 때 생성되는 NH₃의 몰 수를 구하시오.";
+    return withTable(
+      SA(qTxt,ans,"반응식 몰비",[
+        "N₂+3H₂→2NH₃ 반응비: N₂:H₂:NH₃ = 1:3:2",
+        idx===0?"H₂ = "+mol_n2+" × 3 = "+fn(mol_h2)+" mol":"NH₃ = "+mol_n2+" × 2 = "+fn(mol_nh3)+" mol"
+      ]),
+      ["물질","N₂","H₂","NH₃"],
+      [["계수","1","3","2"],["반응 몰 수",String(mol_n2),String(mol_h2),String(mol_nh3)]]
+    );
+  },
+  function(d){
+    var mol=r(d>0?1:2,d>1?40:d>0?20:10,d>0?1:2);
+    var o2=rnd(mol/2,3);
+    var vol=rnd(o2*MV,2);
+    return SA("STP에서 2H₂+O₂→2H₂O 반응 시 H₂ "+mol+"mol에 필요한 O₂의 부피는?",fn(vol)+" L","반응식 몰비",[
+      "H₂:O₂ = 2:1 → O₂ = "+mol+" ÷ 2 = "+fn(o2)+" mol",
+      "STP 부피 = "+fn(o2)+" × 22.4 = "+fn(vol)+" L"
+    ]);
+  },
+],
+
+}; // end TM
+
+// ════════════════════════════════════════════════
+//  유형 정보
+// ════════════════════════════════════════════════
+var TYPE_INFO=[
+  {id:"mol_from_mass",   label:"몰 수 계산",       icon:"⚖️",  desc:"질량 ↔ 몰"},
+  {id:"particle_count",  label:"분자 수 계산",      icon:"🔢",  desc:"몰 → 입자 수"},
+  {id:"gas_volume",      label:"기체 부피 (STP)",   icon:"💨",  desc:"몰 ↔ 부피"},
+  {id:"percent_comp",    label:"백분율 조성",        icon:"📊",  desc:"원소 질량%"},
+  {id:"mixed_gas",       label:"혼합 기체",          icon:"🌀",  desc:"혼합·질량"},
+  {id:"reaction_mol",    label:"반응식 몰비",        icon:"⚗️",  desc:"화학 반응"},
+];
+var selTypes=TYPE_INFO.map(function(t){return t.id;});
+var diff="easy",qCnt=5;
+
+function initTypeGrid(){
+  var g=document.getElementById("typeGrid");g.innerHTML="";
+  TYPE_INFO.forEach(function(t){
+    var b=document.createElement("button");
+    b.className="type-btn on";b.id="tp-"+t.id;
+    b.innerHTML=t.icon+' <span><b>'+t.label+'</b><br><span style="font-size:.68rem;color:var(--text3)">'+t.desc+'</span></span>';
+    b.onclick=(function(id){return function(){toggleType(id);};})(t.id);
+    g.appendChild(b);
+  });
+}
+function toggleType(id){
+  var idx=selTypes.indexOf(id);
+  if(idx>=0){
+    if(selTypes.length<=1){alert("최소 1개 이상 선택해야 합니다.");return;}
+    selTypes.splice(idx,1);
+    document.getElementById("tp-"+id).classList.remove("on");
+  } else {
+    selTypes.push(id);
+    document.getElementById("tp-"+id).classList.add("on");
+  }
+}
+function setDiff(d){
+  diff=d;
+  ["easy","mid","hard","all"].forEach(function(x){
+    document.getElementById("d-"+x).classList.toggle("on",x===d);
+  });
+}
+function chgN(d){qCnt=Math.max(1,Math.min(30,qCnt+d));document.getElementById("nDisp").textContent=qCnt;}
+
+// ════════════════════════════════════════════════
+//  퀴즈 생성
+// ════════════════════════════════════════════════
+var CQs=[],userSel={};
+
+function genQuiz(){
+  if(!selTypes.length){alert("유형을 선택해주세요.");return;}
+  var pool=[];
+  selTypes.forEach(function(tid){if(TM[tid])pool=pool.concat(TM[tid]);});
+  if(!pool.length)return;
+  var dlvl=diff==="all"?-1:(diff==="easy"?0:diff==="mid"?1:2);
+  CQs=[];
+  for(var i=0;i<qCnt;i++){
+    var fn2=pick(pool);
+    var d=dlvl<0?Math.floor(Math.random()*3):dlvl;
+    var q=fn2(d);q.id=i+1;CQs.push(q);
+  }
+  userSel={};
+  document.getElementById("qSetup").style.display="none";
+  renderQs();
+  document.getElementById("qQs").style.display="block";
+  document.getElementById("qRes").style.display="none";
+}
+
+function buildTbl(t){
+  if(!t)return "";
+  var h='<div class="qtbl-wrap"><table class="qtbl"><thead><tr>';
+  t.headers.forEach(function(hd){h+='<th>'+esc(hd)+'</th>';});
+  h+='</tr></thead><tbody>';
+  t.rows.forEach(function(row){
+    h+='<tr>';
+    row.forEach(function(cell){h+='<td>'+esc(cell)+'</td>';});
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+function buildStepsSol(steps,ans){
+  var h='<div class="sol" id="sol-'+0+'">';
+  // will fill id later per question
+  h+='<div class="sol-title">▶ 단계별 풀이</div><div class="steps">';
+  steps.forEach(function(s,i){
+    h+='<div class="step"><div class="step-num">'+(i+1)+'</div><div class="step-txt">'+esc(s)+'</div></div>';
+  });
+  h+='</div><div class="ans-line">정답: '+esc(ans)+'</div></div>';
+  return h;
+}
+
+function renderQs(){
+  var cont=document.getElementById("qQs");
+  var mcQs=CQs.filter(function(q){return q.type==="mc";});
+  var saQs=CQs.filter(function(q){return q.type==="sa";});
+  var tblQs=CQs.filter(function(q){return q.tbl;});
+  var h='<div class="qhdr ain">'+
+    '<div class="qmeta">'+
+    '<span class="qbadge qb-mc">객관식 '+mcQs.length+'문제</span>'+
+    '<span class="qbadge qb-sa">주관식 '+saQs.length+'문제</span>'+
+    (tblQs.length?'<span class="qbadge qb-tbl">표 포함 '+tblQs.length+'</span>':'' )+
+    '</div>'+
+    '<button class="rbtn" onclick="resetQuiz()">✕ 다시 설정</button></div>';
+  CQs.forEach(function(q,i){h+=buildQCard(q,i+1);});
+  h+='<div class="submit-area">'+
+    '<button class="subbtn" id="subBtn" onclick="submitQuiz()">채점하기</button>'+
+    '<div style="font-size:.75rem;color:var(--text3)">모든 문제를 풀고 채점하세요</div>'+
+    '</div>';
+  cont.innerHTML=h;
+}
+
+function buildQCard(q,num){
+  // input
+  var inp="";
+  if(q.type==="mc"){
+    inp='<div class="chgrid">';
+    (q.choices||[]).forEach(function(ch){
+      inp+='<button class="chbtn" data-choice="'+esc(ch)+'" onclick="selCh('+q.id+',this)">'+esc(ch)+'</button>';
+    });
+    inp+='</div>';
+  } else {
+    inp='<input class="sainput" id="sa-'+q.id+'" placeholder="답 입력..." type="text">';
+  }
+  // sol
+  var sol='<div class="sol" id="sol-'+q.id+'">'+
+    '<div class="sol-title">▶ 단계별 풀이</div><div class="steps">';
+  (q.steps||[]).forEach(function(s,i){
+    sol+='<div class="step"><div class="step-num">'+(i+1)+'</div><div class="step-txt">'+esc(s)+'</div></div>';
+  });
+  sol+='</div><div class="ans-line" id="ans-'+q.id+'"></div></div>';
+  return '<div class="qcard ain" id="qc-'+q.id+'">'+
+    '<div class="qhd">'+
+    '<div class="qnum '+q.type+'">'+
+      (q.type==="mc"?"객":"주")+' '+num+
+    '</div>'+
+    '<div class="qtxt">'+esc(q.question)+'</div>'+
+    '<div class="qtag">'+esc(q.topic)+'</div>'+
+    '</div>'+
+    buildTbl(q.tbl)+
+    inp+sol+
+    '<button class="save-btn" id="svbtn-'+q.id+'" onclick="saveQ('+q.id+')">📌 저장</button>'+
+    '</div>';
+}
+
+function selCh(qid,btn){
+  btn.closest(".chgrid").querySelectorAll(".chbtn").forEach(function(b){b.classList.remove("sel");});
+  btn.classList.add("sel");
+  userSel[qid]=btn.getAttribute("data-choice");
+}
+
+function submitQuiz(){
+  for(var i=0;i<CQs.length;i++){
+    var q=CQs[i];
+    if(q.type==="mc"&&!userSel[q.id]){alert((i+1)+"번 객관식을 선택해주세요.");return;}
+    if(q.type==="sa"){var el=document.getElementById("sa-"+q.id);if(!el||!el.value.trim()){alert((i+1)+"번 주관식 답을 입력해주세요.");return;}}
+  }
+  var ok=0;
+  CQs.forEach(function(q){
+    var card=document.getElementById("qc-"+q.id);
+    var sol=document.getElementById("sol-"+q.id);
+    var ansEl=document.getElementById("ans-"+q.id);
+    if(sol)sol.classList.add("show");
+    if(ansEl)ansEl.textContent="정답: "+q.answer;
+    if(q.type==="mc"){
+      var ua=(userSel[q.id]||"").trim(),ra=(q.answer||"").trim(),good=ua===ra;
+      if(good)ok++;
+      card.querySelectorAll(".chbtn").forEach(function(b){
+        b.disabled=true;
+        if((b.getAttribute("data-choice")||"").trim()===ra)b.classList.add("ca");
+        else if(b.classList.contains("sel")&&!good)b.classList.add("wa");
+      });
+      card.classList.add(good?"ok":"ng");
+    } else {
+      var inp=document.getElementById("sa-"+q.id);
+      var uv=inp?inp.value.trim():"";
+      var norm=function(s){return s.replace(/\s+/g,"").replace(/×/g,"x").toLowerCase();};
+      var good=norm(uv)===norm(String(q.answer));
+      if(good)ok++;
+      if(inp){inp.disabled=true;inp.classList.add(good?"ci":"wi");}
+      card.classList.add(good?"ok":"ng");
+    }
+  });
+  document.getElementById("subBtn").disabled=true;
+  showResult(ok,CQs.length);
+}
+
+function showResult(ok,tot){
+  var pct=Math.round(ok/tot*100),cls=pct>=80?"hi":pct>=50?"mi":"lo";
+  var msg=pct===100?"🎉 완벽합니다!":pct>=80?"👍 잘했어요!":pct>=50?"😊 좋은 시도!":"📚 더 공부해봐요!";
+  var el=document.getElementById("qRes");
+  el.style.display="block";
+  el.innerHTML='<div class="reshero ain">'+
+    '<div class="resscore '+cls+'">'+ok+' / '+tot+'</div>'+
+    '<div class="reslbl">'+msg+'&nbsp; 정답률 '+pct+'%</div>'+
+    '<div class="reschips"><span class="rchip rc-ok">✓ 정답 '+ok+'</span><span class="rchip rc-ng">✗ 오답 '+(tot-ok)+'</span></div>'+
+    '<div class="rebtns">'+
+    '<button class="rebtn pri" onclick="genQuiz()">🔄 새 문제</button>'+
+    '<button class="rebtn sec" onclick="resetQuiz()">⚙ 설정 변경</button>'+
+    '</div></div>';
+  el.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function resetQuiz(){
+  userSel={};CQs=[];
+  document.getElementById("qSetup").style.display="block";
+  document.getElementById("qQs").style.display="none";document.getElementById("qQs").innerHTML="";
+  document.getElementById("qRes").style.display="none";document.getElementById("qRes").innerHTML="";
+}
+
+// ════════════════════════════════════════════════
+//  탭
+// ════════════════════════════════════════════════
+function goTab(t){
+  ["fc","quiz","saved"].forEach(function(id){
+    document.getElementById("tab-"+id).classList.toggle("on",id===t);
+    document.getElementById("sec-"+id).classList.toggle("on",id===t);
+  });
+  if(t==="saved")renderSaved();
+}
+
+// ════════════════════════════════════════════════
+//  플래시카드
+// ════════════════════════════════════════════════
+var CARDS=[
+  {concept:"원자량",en:"Atomic Mass",topic:"원자량",
+   back:"탄소-12 원자 질량을 12로 기준한 상대적 질량\n\n• 단위 없음 (무차원)\n• H=1  C=12  N=14  O=16\n  Na=23  Cl=35.5  S=32\n\n※ 동위원소의 가중 평균값"},
+  {concept:"분자량",en:"Molecular Mass",topic:"분자량",
+   back:"분자를 구성하는 원자들의 원자량 합\n\n  H₂O=18   CO₂=44\n  NH₃=17   CH₄=16\n  H₂SO₄=98  NaCl=58.5\n  NaOH=40  CaCO₃=100"},
+  {concept:"아보가드로 법칙",en:"Avogadro's Law",topic:"아보가드로",
+   back:"같은 온도·압력에서 같은 부피 → 같은 분자 수\n\n  부피비 = 분자 수비 = 몰 수비\n\nSTP: 기체 1mol = 22.4 L\n(0°C, 1atm 기준)"},
+  {concept:"아보가드로 수",en:"Avogadro's Number",topic:"아보가드로",
+   back:"Nₐ = 6.022 × 10²³ /mol\n\n  입자 수 = 몰 수 × Nₐ\n  몰 수 = 입자 수 ÷ Nₐ\n\n예: H₂O 2mol → 1.2044×10²⁴개"},
+  {concept:"몰 (mol)",en:"Mole",topic:"몰",
+   back:"1 mol = 6.022×10²³ 개\n\n  몰 수 = 질량 ÷ 몰질량\n  몰 수 = 부피(L) ÷ 22.4\n  몰 수 = 입자 수 ÷ Nₐ"},
+  {concept:"몰질량",en:"Molar Mass",topic:"몰질량",
+   back:"물질 1mol의 질량 (g/mol)\n\n  H₂O=18  CO₂=44  NaCl=58.5\n  NH₃=17  CH₄=16  HCl=36.5\n\n  질량(g) = 몰 수 × 몰질량"},
+  {concept:"몰 부피",en:"Molar Volume",topic:"몰 부피",
+   back:"STP(0°C, 1atm)에서 기체 1mol = 22.4 L\n\n  부피(L) = 몰 수 × 22.4\n  몰 수   = 부피 ÷ 22.4\n\n기체 종류와 무관하게 동일!"},
+  {concept:"몰 농도",en:"Molarity",topic:"몰 농도",
+   back:"용액 1L당 용질 몰 수 (M = mol/L)\n\n  M = 몰 수 ÷ 부피(L)\n  희석: C₁V₁ = C₂V₂\n\n예: 2M NaOH 500mL → NaOH 1mol"},
+  {concept:"화학식량",en:"Formula Mass",topic:"화학식량",
+   back:"이온 결합 물질의 원자량 합 (단위없음)\n\n  NaCl=58.5  CaCO₃=100\n  MgSO₄=120  Al₂O₃=102\n\n몰질량(g/mol)과 수치는 같다"},
+  {concept:"백분율 조성",en:"Percent Composition",topic:"조성",
+   back:"원소 질량% = 원소 총 원자량 ÷ 분자량 × 100\n\nH₂O: H=11.1%  O=88.9%\nCO₂: C=27.3%  O=72.7%\nNaCl: Na=39.3% Cl=60.7%"},
+];
+var curFC=0,isFlipped=false;
+function renderFC(){
+  var c=CARDS[curFC];
+  document.getElementById("fcFront").textContent=c.concept;
+  document.getElementById("fcEn").textContent=c.en;
+  document.getElementById("fcBadge").textContent=c.topic;
+  document.getElementById("fcBack").textContent=c.back;
+  document.getElementById("fcN").textContent=curFC+1;
+  document.querySelectorAll(".dot").forEach(function(d,i){d.classList.toggle("on",i===curFC);});
+  document.querySelectorAll(".chip").forEach(function(ch,i){ch.classList.toggle("on",i===curFC);});
+}
+function flipFC(){isFlipped=!isFlipped;document.getElementById("fcInner").classList.toggle("flipped",isFlipped);}
+function nextFC(){isFlipped=false;document.getElementById("fcInner").classList.remove("flipped");curFC=(curFC+1)%CARDS.length;renderFC();}
+function prevFC(){isFlipped=false;document.getElementById("fcInner").classList.remove("flipped");curFC=(curFC-1+CARDS.length)%CARDS.length;renderFC();}
+function gotoFC(i){isFlipped=false;document.getElementById("fcInner").classList.remove("flipped");curFC=i;renderFC();}
+function initFC(){
+  document.getElementById("fcT").textContent=CARDS.length;
+  var de=document.getElementById("fcDots");de.innerHTML="";
+  CARDS.forEach(function(_,i){var d=document.createElement("div");d.className="dot";d.onclick=(function(x){return function(){gotoFC(x);};})(i);de.appendChild(d);});
+  var ge=document.getElementById("fcChips");ge.innerHTML="";
+  CARDS.forEach(function(c,i){var ch=document.createElement("div");ch.className="chip";ch.textContent=c.concept;ch.onclick=(function(x){return function(){gotoFC(x);};})(i);ge.appendChild(ch);});
+  renderFC();
+}
+
+// ════════════════════════════════════════════════
+//  저장
+// ════════════════════════════════════════════════
+var savedList=[];
+function saveQ(qid){
+  var q=null;for(var i=0;i<CQs.length;i++){if(CQs[i].id===qid){q=CQs[i];break;}}
+  if(!q)return;
+  for(var i=0;i<savedList.length;i++){if(savedList[i].question===q.question){
+    var sb=document.getElementById("svbtn-"+qid);
+    if(sb){sb.textContent="✓ 이미 저장됨";sb.classList.add("saved");}return;
+  }}
+  savedList.push({uid:Date.now(),type:q.type,topic:q.topic,question:q.question,tbl:q.tbl,
+    choices:q.choices||null,answer:q.answer,steps:q.steps||[]});
+  var sb=document.getElementById("svbtn-"+qid);
+  if(sb){sb.textContent="✓ 저장됨";sb.classList.add("saved");}
+  updateBadge();
+}
+function updateBadge(){
+  var b=document.getElementById("sbadge");
+  if(savedList.length>0){b.style.display="inline";b.textContent=savedList.length;}
+  else b.style.display="none";
+}
+function delSaved(uid){savedList=savedList.filter(function(q){return q.uid!==uid;});updateBadge();renderSaved();}
+function clearSaved(){if(confirm("저장된 문제를 모두 삭제할까요?")){savedList=[];updateBadge();renderSaved();}}
+function spSel(uid,btn){btn.closest(".chgrid").querySelectorAll(".chbtn").forEach(function(b){b.classList.remove("sel");});btn.classList.add("sel");}
+function spSubmit(uid){
+  var q=null;for(var i=0;i<savedList.length;i++){if(savedList[i].uid===uid){q=savedList[i];break;}}
+  if(!q)return;
+  var resEl=document.getElementById("spres-"+uid);
+  var solEl=document.getElementById("spso-"+uid);
+  var subBtn=document.getElementById("spsb-"+uid);
+  var good=false;
+  if(q.type==="mc"){
+    var selBtn=document.querySelector("#spcard-"+uid+" .chbtn.sel");
+    if(!selBtn){alert("보기를 선택해주세요.");return;}
+    good=((selBtn.getAttribute("data-choice")||"").trim()===(q.answer||"").trim());
+    document.querySelector("#spcard-"+uid+" .chgrid").querySelectorAll(".chbtn").forEach(function(b){
+      b.disabled=true;
+      if((b.getAttribute("data-choice")||"").trim()===q.answer.trim())b.classList.add("ca");
+      else if(b.classList.contains("sel")&&!good)b.classList.add("wa");
+    });
+  } else {
+    var inp=document.getElementById("spinp-"+uid);
+    if(!inp||!inp.value.trim()){alert("답을 입력해주세요.");return;}
+    var norm=function(s){return s.replace(/\s+/g,"").replace(/×/g,"x").toLowerCase();};
+    good=norm(inp.value.trim())===norm(String(q.answer));
+    inp.disabled=true;inp.classList.add(good?"ci":"wi");
+  }
+  resEl.className="sp-res "+(good?"ok":"ng");
+  resEl.textContent=good?"✓ 정답입니다!":"✗ 오답. 정답: "+q.answer;
+  solEl.classList.add("show");subBtn.disabled=true;
+}
+function spReset(uid){
+  var q=null;for(var i=0;i<savedList.length;i++){if(savedList[i].uid===uid){q=savedList[i];break;}}
+  if(!q)return;
+  var resEl=document.getElementById("spres-"+uid);resEl.className="sp-res";resEl.textContent="";
+  document.getElementById("spso-"+uid).classList.remove("show");
+  document.getElementById("spsb-"+uid).disabled=false;
+  if(q.type==="mc"){
+    document.querySelector("#spcard-"+uid+" .chgrid").querySelectorAll(".chbtn").forEach(function(b){b.disabled=false;b.classList.remove("sel","ca","wa");});
+  } else {
+    var inp=document.getElementById("spinp-"+uid);
+    if(inp){inp.disabled=false;inp.value="";inp.className="sainput";}
+  }
+}
+function renderSaved(){
+  var c=document.getElementById("savedWrap");
+  if(savedList.length===0){
+    c.innerHTML='<div class="saved-empty"><div style="font-size:2rem;margin-bottom:12px">📂</div><p>저장된 문제가 없습니다.<br>문제 풀기 탭에서 <b>📌 저장</b>을 눌러보세요.</p></div>';
+    return;
+  }
+  var h='<div class="saved-toolbar"><div class="scount">저장된 문제 <b>'+savedList.length+'</b>개</div>'+
+    '<button class="clr-btn" onclick="clearSaved()">전체 삭제</button></div>';
+  savedList.forEach(function(q){
+    var uid=q.uid;
+    var inp="";
+    if(q.type==="mc"&&q.choices){
+      inp='<div class="chgrid" style="margin-top:11px">';
+      q.choices.forEach(function(ch){inp+='<button class="chbtn" data-choice="'+esc(ch)+'" onclick="spSel('+uid+',this)">'+esc(ch)+'</button>';});
+      inp+='</div>';
+    } else {
+      inp='<input class="sainput" id="spinp-'+uid+'" placeholder="답 입력..." type="text" style="margin-top:11px">';
+    }
+    var sol='<div class="ssol" id="spso-'+uid+'">'+
+      '<div class="sol-title">▶ 단계별 풀이</div><div class="steps">';
+    (q.steps||[]).forEach(function(s,i){
+      sol+='<div class="step"><div class="step-num">'+(i+1)+'</div><div class="step-txt">'+esc(s)+'</div></div>';
+    });
+    sol+='</div><div class="ans-line">정답: '+esc(q.answer)+'</div></div>';
+    h+='<div class="scard ain" id="spcard-'+uid+'">'+
+      '<div class="scard-hd">'+
+      '<div class="stype '+q.type+'">'+( q.type==="mc"?"객":"주")+ '</div>'+
+      '<div class="sq">'+esc(q.question)+'</div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;margin-left:7px">'+
+      '<div class="stopic">'+esc(q.topic)+'</div>'+
+      '<button class="sdel" onclick="delSaved('+uid+')">✕</button>'+
+      '</div></div>'+
+      buildTbl(q.tbl)+
+      inp+
+      '<div class="sp-btns"><button class="sp-sub" id="spsb-'+uid+'" onclick="spSubmit('+uid+')">채점하기</button>'+
+      '<button class="sp-rst" onclick="spReset('+uid+')">↺ 다시 풀기</button></div>'+
+      '<div class="sp-res" id="spres-'+uid+'"></div>'+
+      sol+'</div>';
+  });
+  c.innerHTML=h;
+}
+
+// ════════════════════════════════════════════════
+//  초기화
+// ════════════════════════════════════════════════
+initFC();
+initTypeGrid();
+</script>
+</body>
+</html>
